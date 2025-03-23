@@ -27,80 +27,26 @@ export const VideoPlayerSection = () => {
   };
 
   const renderContent = () => {
-    if (isNervousSystem) {
-      return (
+    // Skip "No view selected" if subItem is auto-selected or available
+    if (!selectedSubItem) {
+      return isNervousSystem ? (
         <Box display="flex" alignItems="center" textAlign="center">
           <Box sx={{ px: 5 }}>
             <VariantSelectionbar />
           </Box>
-
-          {!selectedSubItem ? (
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography
-                sx={{ fontSize: "24px", color: theme.palette.text.secondary }}
-              >
-                No view selected
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "24px",
-                  color: theme.palette.text.secondary,
-                  marginTop: "10px",
-                }}
-              >
-                To display detailed imaging data, please select one of the
-                available views from the options above.
-              </Typography>
-            </Box>
-          ) : isVideoError ? (
+          <Box sx={{ flexGrow: 1 }}>
             <Typography
-              sx={{
-                fontSize: "24px",
-                color: theme.palette.text.secondary,
-                flexGrow: 1,
-                textAlign: "center",
-              }}
+              sx={{ fontSize: "24px", color: theme.palette.text.secondary }}
             >
-              No Video Found
+              To display detailed imaging data, please select one of the
+              available views from the options above.
             </Typography>
-          ) : (
-            <Box display="flex" flexDirection="row">
-              <CustomVideoPlayer
-                src={videoUrl}
-                onError={() => setIsVideoError(true)}
-                activeTool={activeTool}
-              />
-              <Box display="flex" justifyContent="center">
-                <VideoToolbar onActionSelect={handleActionSelect} />
-              </Box>
-            </Box>
-          )}
+          </Box>
         </Box>
-      );
+      ) : null; // Skip rendering "No view selected" for other sections
     }
 
-    if (!selectedSubItem) {
-      return (
-        <>
-          <Typography
-            sx={{ fontSize: "24px", color: theme.palette.text.secondary }}
-          >
-            No view selected
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: "24px",
-              color: theme.palette.text.secondary,
-              marginTop: "10px",
-            }}
-          >
-            To display detailed imaging data, please select one of the available
-            views from the options above.
-          </Typography>
-        </>
-      );
-    }
-
+    // Show error if video is not found
     if (isVideoError) {
       return (
         <Typography
@@ -111,8 +57,9 @@ export const VideoPlayerSection = () => {
       );
     }
 
+    // Render video player and toolbar
     return (
-      <Box display="flex" flexDirection="row" justifyContent={"center"}>
+      <Box display="flex" flexDirection="row" justifyContent="center">
         <CustomVideoPlayer
           src={videoUrl}
           onError={() => setIsVideoError(true)}

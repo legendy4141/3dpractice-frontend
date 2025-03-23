@@ -25,10 +25,6 @@ export const VideoTopbar = () => {
   const { section, videoId, selectedSubItem } = useParams();
   const [activeSubItem, setActiveSubItem] = useState(selectedSubItem || "");
 
-  useEffect(() => {
-    setActiveSubItem(selectedSubItem || "");
-  }, [selectedSubItem]);
-
   const videoDataMap = {
     spine: spineVideoData,
     shoulder: shoulderVideoData,
@@ -45,6 +41,16 @@ export const VideoTopbar = () => {
   const videoDetails = videoDataMap[section]?.find(
     (video) => video.routing === `/video/${videoId}`
   );
+
+  useEffect(() => {
+    if (!selectedSubItem && videoDetails?.subItems?.length > 0) {
+      const firstSubItem = videoDetails.subItems[0];
+      setActiveSubItem(firstSubItem);
+      navigate(`/${section}/${videoId}/${firstSubItem}`, { replace: true });
+    } else {
+      setActiveSubItem(selectedSubItem || "");
+    }
+  }, [selectedSubItem, videoDetails, section, videoId, navigate]);
 
   const handleSubItemClick = (subItem) => {
     setActiveSubItem(subItem);
