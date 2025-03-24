@@ -24,7 +24,7 @@ import Autonomic from "../assets/thumbnail/autonomic.png";
 
 export const spineVideoData = [
   {
-    title: "Disc Ailmentsss",
+    title: "Disc Ailments",
     image: DiscAilments,
     subItems: ["Left Lateral", "Right Lateral", "Posterior Lateral", "Central"],
     routing: "/video/disc-ailments",
