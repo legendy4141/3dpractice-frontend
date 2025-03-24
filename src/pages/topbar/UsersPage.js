@@ -194,34 +194,44 @@ const UsersPage = () => {
                 <TableCell
                   key={index}
                   sx={{
-                    fontFamily: "Poppins",
-                    fontWeight: 500,
-                    fontSize: "20px",
-                    color: darkMode
-                      ? getColors.listItemTextDark
-                      : getColors.thumbnailTextLight,
-                    ...(header === "name" || header === "email"
-                      ? {
-                          px: "20px",
-                        }
-                      : { textAlign: "center" }),
                     borderColor: darkMode
                       ? getColors.appBarBorderDark
                       : getColors.thumbnailBorderLight,
+                    px: 0,
                     cursor: "pointer",
                   }}
                   onClick={() => handleSort(header)}
                 >
-                  {header.toUpperCase()}
-                  {sortConfig.key === header && (
-                    <>
-                      {sortConfig.direction === "asc" ? (
-                        <ArrowUpwardIcon />
-                      ) : (
-                        <ArrowDownwardIcon />
-                      )}
-                    </>
-                  )}
+                  <Box
+                    display="flex"
+                    sx={{
+                      width: "100%",
+                      height: "100%",
+                      alignItems: "center",
+                      fontFamily: "Poppins",
+                      fontWeight: 500,
+                      fontSize: "20px",
+                      color: darkMode
+                        ? getColors.listItemTextDark
+                        : getColors.thumbnailTextLight,
+                      ...(header === "name" || header === "email"
+                        ? {
+                            px: "20px",
+                          }
+                        : { justifyContent: "center" }),
+                    }}
+                  >
+                    {header.toUpperCase()}
+                    {sortConfig.key === header && (
+                      <>
+                        {sortConfig.direction === "asc" ? (
+                          <ArrowDownwardIcon sx={{ ml: 1 }} />
+                        ) : (
+                          <ArrowUpwardIcon sx={{ ml: 1 }} />
+                        )}
+                      </>
+                    )}
+                  </Box>
                 </TableCell>
               ))}
               <TableCell
