@@ -143,6 +143,47 @@ export const CustomVideoPlayer = ({ src, onError, activeTool }) => {
     setIsDrawing(false);
   };
 
+  const handleTouchStart = (e) => {
+    if (activeTool !== "draw" || !ctx) return;
+
+    // Calculate the scale factor to adjust touch position based on canvas size vs video size
+    const scaleX = canvasRef.current.width / videoRef.current.clientWidth;
+    const scaleY = canvasRef.current.height / videoRef.current.clientHeight;
+
+    setIsDrawing(true);
+    ctx.beginPath();
+
+    // Adjust touch coordinates for scaling
+    const touch = e.touches[0];
+    const rect = canvasRef.current.getBoundingClientRect();
+
+    const offsetX = (touch.clientX - rect.left) / scaleX;
+    const offsetY = (touch.clientY - rect.top) / scaleY;
+
+    ctx.moveTo(offsetX, offsetY);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDrawing || !ctx) return;
+
+    // Calculate the scale factor to adjust touch position based on canvas size vs video size
+    const scaleX = canvasRef.current.width / videoRef.current.clientWidth;
+    const scaleY = canvasRef.current.height / videoRef.current.clientHeight;
+
+    // Adjust touch coordinates for scaling
+    const touch = e.touches[0];
+    const rect = canvasRef.current.getBoundingClientRect();
+    const offsetX = (touch.clientX - rect.left) / scaleX;
+    const offsetY = (touch.clientY - rect.top) / scaleY;
+
+    ctx.lineTo(offsetX, offsetY);
+    ctx.stroke();
+  };
+
+  const handleTouchEnd = () => {
+    setIsDrawing(false);
+  };
+
   const clearCanvas = useCallback(() => {
     if (ctx) {
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
@@ -299,6 +340,9 @@ export const CustomVideoPlayer = ({ src, onError, activeTool }) => {
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             />
           </>
         ) : (
