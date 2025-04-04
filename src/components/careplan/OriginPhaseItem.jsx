@@ -6,11 +6,17 @@ import { ThemeContext } from "../../context/ThemeContext";
 export const OriginPhaseItem = ({ id, name, onSetDefault, onCopyPhase }) => {
   const { darkMode } = useContext(ThemeContext);
 
-  const handleCopyClick = () => {
+  const handleClick = () => {
+    console.log("clicked");
+  };
+
+  const handleCopyClick = (e) => {
+    e.stopPropagation();
     onCopyPhase(id);
   };
 
-  const handleSetDefaultClick = () => {
+  const handleSetDefaultClick = (e) => {
+    e.stopPropagation();
     onSetDefault(id);
   };
 
@@ -35,6 +41,7 @@ export const OriginPhaseItem = ({ id, name, onSetDefault, onCopyPhase }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={handleClick}
     >
       <Typography
         sx={{

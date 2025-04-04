@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FormControl,
@@ -8,496 +8,542 @@ import {
   TextField,
   useTheme,
 } from "@mui/material";
-
 import { Add } from "@mui/icons-material";
 
 import { ThemeContext } from "../../context/ThemeContext";
 import { getColors } from "../../themes/theme";
-import { SendForm } from "./SendForm";
 import { EBPProtocolItem } from "./EBPProtocolItem";
 import { CustomProtocolItem } from "./CustomProtocolItem";
 import { useForm } from "react-hook-form";
 import { SelectedExerciseItem } from "./SelectedExerciseItem";
 import { AvailableExerciseItem } from "./AvailableExerciseItem";
+import axios from "axios";
+import { useAuthContext } from "../../hooks/contexts/useAuthContext";
+import { enqueueSnackbar } from "notistack";
 
 export const MainContent = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
-    defaultValues: {
-      protocolName: "",
-    },
+    defaultValues: { protocolName: "" },
   });
 
   const { mainId, subId, protocolId } = useParams();
   const theme = useTheme();
   const { darkMode } = useContext(ThemeContext);
   const navigate = useNavigate();
+  const [allExercises, setAllExercises] = useState([]);
+  const [selectedExercises, setSelectedExercises] = useState([]);
+  const { user, token } = useAuthContext();
+  const [allEBProtocols, setAllEBProtocols] = useState([]);
+  const [conditionID, setConditionID] = useState();
+  const [exerciseIDList, setExerciseIDList] = useState([]);
+  const [customProtocols, setCustomProtocols] = useState([]);
 
-  const allExerciseData = [
-    { id: "active-resisted-extension", select: false },
-    { id: "active-resisted-external-rotation", select: false },
-    { id: "active-resisted-internal-rotation", select: false },
-    { id: "bird-dog", select: true },
-    { id: "brand-pull", select: false },
-    { id: "bridging", select: false },
-    { id: "bridging-leg-extension", select: false },
-    { id: "bruegger-posture-sitting", select: false },
-    { id: "cat-camel", select: false },
-    { id: "cervical-retraction", select: true },
-    { id: "cervical-spine-lateral-neck-flexion", select: false },
-    { id: "cervical-spine-levator-stretch", select: false },
-    { id: "cervical-spine-neck-extension", select: false },
-    { id: "cervical-spine-resistive-lateral-flexion", select: true },
-    { id: "cervical-spine-resistive-rotation", select: false },
-    { id: "cervical-spine-scalene-stretch", select: true },
-    { id: "cervical-spine-scalene-strtech2", select: false },
-    { id: "cervical-spine-stretch-axial-retraction", select: false },
-    { id: "cervical-spine-upper-trapezius-stretch", select: false },
-  ];
+  const renderingExercises = useMemo(() => {
+    return allExercises.map((exercise) => {
+      const selectedExercise = selectedExercises.find(
+        (exer) => exer.exerciseid === exercise.id
+      );
+      return selectedExercise
+        ? {
+            ...exercise,
+            instructions: selectedExercise.instructions,
+            hold: selectedExercise.hold,
+            repeat: selectedExercise.repeat,
+            timesperday: selectedExercise.timesperday,
+            range: selectedExercise.range,
+            resistance: selectedExercise.resistance,
+            direction: selectedExercise.direction,
+            select: true,
+          }
+        : { ...exercise, select: false };
+    });
+  }, [allExercises, selectedExercises]);
 
-  const [allExercises, setAllExercises] = useState([
-    {
-      id: "ankle",
-      title: "Ankle",
-      subItems: [
-        {
-          id: "ankle-sprain",
-          title: "Ankle Sprain",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "cervical",
-      title: "Cervical",
-      subItems: [
-        {
-          id: "bulging-disc",
-          title: "Bulging disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "cervical-radiculopathy",
-          title: "Cervical radiculopathy",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "degenerated-disc",
-          title: "Degenerated disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "facet-syndrome",
-          title: "Facet Syndrome",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "forward-head-posture",
-          title: "Forward Head Posture",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "herniated-disc",
-          title: "Herniated disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "kyphosis",
-          title: "Kyphosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "lordosis",
-          title: "Lordosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "neck-pain",
-          title: "Neck Pain",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "spondylolithesis",
-          title: "Spondylolithesis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "stenosis",
-          title: "Stenosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "subluxation",
-          title: "Subluxation",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "elbow",
-      title: "Elbow",
-      subItems: [
-        {
-          id: "epicondylitis",
-          title: "Epicondylitis",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "foot",
-      title: "Foot",
-      subItems: [
-        {
-          id: "plantar-fasciitis",
-          title: "Plantar Fasciitis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "pronation",
-          title: "Pronation",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "supination",
-          title: "Supination",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "hip",
-      title: "Hip",
-      subItems: [
-        {
-          id: "piriformis-syndrome",
-          title: "Piriformis Syndrome",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "knee",
-      title: "Knee",
-      subItems: [
-        {
-          id: "acl-injury",
-          title: "ACL Injury",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "mcl-injury",
-          title: "MCL Injury",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "meniscus-tear",
-          title: "Meniscus Tear",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "osteoarthritis",
-          title: "Osteoarthritis",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "lumbar",
-      title: "Lumbar",
-      subItems: [
-        {
-          id: "bulging-disc",
-          title: "Bulging disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "cervical-radiculopathy",
-          title: "Cervical radiculopathy",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "degenerated-disc",
-          title: "Degenerated disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "facet-syndrome",
-          title: "Facet Syndrome",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "forward-head-posture",
-          title: "Forward Head Posture",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "herniated-disc",
-          title: "Herniated disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "kyphosis",
-          title: "Kyphosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "lordosis",
-          title: "Lordosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "neck-pain",
-          title: "Neck Pain",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "spondylolithesis",
-          title: "Spondylolithesis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "stenosis",
-          title: "Stenosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "subluxation",
-          title: "Subluxation",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "pelvis",
-      title: "Pelvis",
-      subItems: [
-        {
-          id: "psoas-hip-flexor-tightness",
-          title: "Psoas & Hip Flexor Tightness",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "shoulder",
-      title: "Shoulder",
-      subItems: [
-        {
-          id: "adhesive-capsulitis",
-          title: "Adhesive Capsulitis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "impingement",
-          title: "Impingement",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "rotator-cuff-injury",
-          title: "Rotator Cuff Injury",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "thoracic",
-      title: "Thoracic",
-      subItems: [
-        {
-          id: "bulging-disc",
-          title: "Bulging disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "degenerated-disc",
-          title: "Degenerated disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "facet-syndrome",
-          title: "Facet Syndrome",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "herniated-disc",
-          title: "Herniated disc",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "kyphosis",
-          title: "Kyphosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "lordosis",
-          title: "Lordosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "scoliosis",
-          title: "Scoliosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "spondylolithesis",
-          title: "Spondylolithesis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "stenosis",
-          title: "Stenosis",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "subluxation",
-          title: "Subluxation",
-          exercises: [...allExerciseData],
-        },
-        {
-          id: "thoracic-pain",
-          title: "Thoracic Pain",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
-    {
-      id: "wrist",
-      title: "Wrist",
-      subItems: [
-        {
-          id: "carpal-tunnel",
-          title: "Carpal Tunnel",
-          exercises: [...allExerciseData],
-        },
-      ],
-    },
+  useEffect(() => {
+    const fetchAllEBProtocols = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/ebprotocol`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        if (response.data.join() !== allEBProtocols.join()) {
+          setAllEBProtocols(response.data); // Only set state if the data is different
+        }
+      } catch (err) {
+        console.log("Error fetching EB protocols:", err);
+      }
+    };
+
+    if (token) {
+      fetchAllEBProtocols();
+    }
+  }, [token, allEBProtocols]); // Dependency on token and allEBProtocols to avoid redundant API calls
+
+  // Fetch condition ID if mainId and subId are present
+
+  useEffect(() => {
+    if (mainId && subId) {
+      const fetchConditionID = async () => {
+        try {
+          const response = await axios.post(
+            `${process.env.REACT_APP_API_URL}/condition/getid`,
+            {
+              area: mainId,
+              acondition: subId,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          setConditionID(response.data);
+        } catch (err) {
+          console.log("Error fetching condition ID:", err);
+        }
+      };
+      fetchConditionID();
+    }
+  }, [mainId, subId, protocolId, token]); // Only call when mainId, subId, or protocolId changes
+
+  useEffect(() => {
+    if (conditionID) {
+      const fetchCustomProtocols = async () => {
+        try {
+          const res = await axios.post(
+            `${process.env.REACT_APP_API_URL}/protocol/getwithIdNcondition`,
+            {
+              practiceID: user?.practiceId,
+              conditionID: conditionID,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          setCustomProtocols(res.data);
+        } catch (err) {
+          console.log("Error fetching condition ID:", err);
+        }
+      };
+
+      fetchCustomProtocols();
+    }
+  }, [conditionID, token, user]);
+
+  // Fetch Exercise IDs if protocolId is "new"
+  useEffect(() => {
+    if (protocolId !== undefined && mainId && subId) {
+      const fetchExerciseIDs = async () => {
+        try {
+          const response = await axios.post(
+            `${process.env.REACT_APP_API_URL}/condition/getexercises`,
+            {
+              area: mainId,
+              acondition: subId,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const dataArray = response.data.split(",").map(Number);
+          setExerciseIDList(dataArray.slice(1)); // Avoid setting empty or incorrect data
+          setValue("protocolName", "");
+        } catch (err) {
+          console.log("Error fetching exercise IDs:", err);
+        }
+      };
+      fetchExerciseIDs();
+    }
+  }, [protocolId, mainId, subId, token, setValue]); // Trigger only when protocolId, mainId, or subId changes
+
+  // Fetch exercises based on exercise IDs
+  useEffect(() => {
+    if (exerciseIDList.length > 0) {
+      const fetchExercises = async () => {
+        try {
+          const response = await axios.post(
+            `${process.env.REACT_APP_API_URL}/exercise/getexercises`,
+            {
+              ids: exerciseIDList,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          setAllExercises(response.data);
+        } catch (err) {
+          console.log("Error fetching exercises:", err);
+        }
+      };
+      fetchExercises();
+    }
+  }, [exerciseIDList, token]); // Fet
+
+  useEffect(() => {
+    if (
+      protocolId !== undefined &&
+      protocolId !== "new" &&
+      mainId &&
+      subId &&
+      user
+    ) {
+      const fetchSelectedExerciseIDs = async () => {
+        try {
+          const response = await axios.post(
+            `${process.env.REACT_APP_API_URL}/protexercise/getByPracIDnProtID`,
+            {
+              practiceid: user?.practiceId,
+              protocolid: protocolId,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          setSelectedExercises(response.data);
+        } catch (err) {
+          console.log("Error fetching exercise IDs:", err);
+        }
+      };
+      fetchSelectedExerciseIDs();
+
+      const selectedProtocol = customProtocols?.find(
+        (customProtocol) => customProtocol.id.toString() === protocolId
+      );
+
+      selectedProtocol &&
+        setValue("protocolName", selectedProtocol.protocolname);
+    }
+  }, [
+    protocolId,
+    mainId,
+    subId,
+    token,
+    user,
+    customProtocols,
+    allExercises,
+    setValue,
   ]);
 
-  const [allAddedProtocols, setAllAddedProtocols] = useState([]);
+  useEffect(() => {
+    setSelectedExercises([]);
+  }, [protocolId]);
 
-  const handleNewProtocolClicked = () => {
-    navigate(`/exercise/${mainId}/${subId}/new`);
+  const getProtocolNamesByCondition = (conditionID) => {
+    const result = [];
+
+    if (!conditionID) return result;
+
+    allEBProtocols.forEach((protocol) => {
+      const conditionsArray = protocol.conditions.split(",");
+      if (conditionsArray.includes(conditionID.toString())) {
+        result.push(protocol);
+      }
+    });
+
+    return result;
   };
 
-  const onAddProtocol = (data) => {
-    navigate(`/exercise/${mainId}/${subId}`);
-    const newProtocol = {
-      id: `new-${Date.now()}`,
-      name: data.protocolName,
-    };
-    setAllAddedProtocols((prevProtocols) => [...prevProtocols, newProtocol]);
+  const ebProtocols = getProtocolNamesByCondition(conditionID);
+
+  const handleAddToSelected = (id) => {
+    const newSelected = [
+      ...selectedExercises,
+      {
+        ...allExercises.find((exerc) => exerc.id === id),
+        exerciseid: id,
+      },
+    ];
+    setSelectedExercises(newSelected);
   };
 
   const handleDeselect = (id) => {
-    setAllExercises((prevExercises) =>
-      prevExercises.map((exercise) =>
-        exercise.id === mainId
-          ? {
-              ...exercise,
-              subItems: exercise.subItems.map((subitem) =>
-                subitem.id === subId
-                  ? {
-                      ...subitem,
-                      exercises: subitem.exercises.map((exercise) =>
-                        exercise.id === id
-                          ? { ...exercise, select: false }
-                          : { ...exercise }
-                      ),
-                    }
-                  : subitem
-              ),
-            }
-          : exercise
-      )
+    setSelectedExercises(
+      selectedExercises.filter((exerc) => exerc.exerciseid !== id)
     );
   };
 
-  const handleAddToSelected = (id) => {
-    setAllExercises((prevExercises) =>
-      prevExercises.map((exercise) =>
-        exercise.id === mainId
-          ? {
-              ...exercise,
-              subItems: exercise.subItems.map((subitem) =>
-                subitem.id === subId
-                  ? {
-                      ...subitem,
-                      exercises: subitem.exercises.map((exercise) =>
-                        exercise.id === id
-                          ? { ...exercise, select: true }
-                          : { ...exercise }
-                      ),
-                    }
-                  : subitem
-              ),
+  //-------------------style------------------------------------
+
+  const submitButtonStyles = {
+    height: 64,
+    fontSize: "18px",
+    fontWeight: 500,
+    fontFamily: "Poppins",
+    px: 8,
+    py: 2,
+    borderRadius: "5px",
+  };
+
+  const reportButtonStyles = {
+    fontSize: "18px",
+    fontWeight: 500,
+    fontFamily: "Poppins",
+    px: 5,
+    py: "10px",
+    borderRadius: "5px",
+  };
+
+  const protocolsBoxStyles = { mt: "40px", mx: "60px" };
+
+  const protocolTitleStyles = {
+    fontFamily: "Poppins",
+    fontSize: "28px",
+    color: darkMode ? getColors.drawerTextDark : getColors.thumbnailTextLight,
+    fontWeight: 600,
+    textAlign: "left",
+  };
+
+  const newProtocolButtonStyles = {
+    fontFamily: "Poppins",
+    fontSize: "20px",
+    px: "16px",
+    py: "12px",
+    background: darkMode ? "#2D2E30" : "#E6E6E6",
+    color: darkMode ? getColors.primaryTextDark : getColors.secondaryTextLight,
+    "&:hover": {
+      color: getColors.primaryTextDark,
+    },
+  };
+
+  const NoSelectionMessage = ({ message, description }) => (
+    <Box
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      height="100%"
+    >
+      <Typography
+        sx={{
+          fontSize: "24px",
+          color: theme.palette.text.secondary,
+          textAlign: "center",
+        }}
+      >
+        {message}
+      </Typography>
+      <Typography
+        sx={{
+          fontSize: "24px",
+          color: theme.palette.text.secondary,
+          mt: "10px",
+          textAlign: "center",
+        }}
+      >
+        {description}
+      </Typography>
+    </Box>
+  );
+
+  const titleStyles = {
+    fontSize: "22px",
+    fontWeight: 600,
+    color: darkMode ? getColors.drawerTextDark : getColors.thumbnailTextLight,
+    textAlign: "left",
+  };
+
+  const formBoxStyles = {
+    padding: "20px",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: darkMode
+      ? getColors.appBarBorderDark
+      : getColors.appBarBorderLight,
+    gap: 4,
+    mb: 8,
+  };
+
+  const sectionTitleStyles = {
+    fontSize: "22px",
+    fontWeight: 600,
+    color: darkMode ? getColors.drawerTextDark : getColors.thumbnailTextLight,
+    textAlign: "left",
+    mb: 3,
+  };
+
+  const handleNewProtocolClicked = () =>
+    navigate(`/exercise/${mainId}/${subId}/new`);
+
+  const onAddProtocol = async (data) => {
+    if (protocolId === "new") {
+      let protocol;
+      try {
+        const response = await axios.post(
+          `${process.env.REACT_APP_API_URL}/protocol`,
+          {
+            protocolname: data.protocolName,
+            practiceid: user.practiceId,
+            conditions: conditionID && `,${conditionID}`,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        protocol = response.data;
+        setCustomProtocols((prevProtocols) => [...prevProtocols, protocol]);
+      } catch (err) {
+        console.log("Error adding protocol:", err);
+        enqueueSnackbar("Error adding protocol", { variant: "error" });
+        return;
+      }
+
+      if (protocol) {
+        const selectedExercises = renderingExercises
+          .filter((exercise) => exercise.select === true)
+          .map((exercise) => {
+            const randomKey = Math.floor(10000000 + Math.random() * 90000000);
+
+            return {
+              practiceid: user.practiceId,
+              protocolid: protocol?.id,
+              conditionid: 0,
+              exerciseid: exercise.id,
+              instructions: exercise.instructions,
+              hold: exercise.hold,
+              repeat: exercise.repeat,
+              timesperday: exercise.timesperday,
+              range: exercise.range,
+              resistance: exercise.resistance,
+              direction: exercise.direction,
+              randomkey: randomKey,
+            };
+          });
+
+        try {
+          await axios.post(
+            `${process.env.REACT_APP_API_URL}/protexercise/bulk-create`,
+            selectedExercises,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
             }
-          : exercise
-      )
+          );
+          enqueueSnackbar("Successfully Added!", { variant: "success" });
+          navigate(`/exercise/${mainId}/${subId}`);
+        } catch (err) {
+          console.log("Error adding protocol:", err);
+          enqueueSnackbar("Error adding protocol", { variant: "error" });
+        }
+      }
+    } else {
+      let protocol;
+      try {
+        const response = await axios.put(
+          `${process.env.REACT_APP_API_URL}/protocol/${protocolId}`,
+          {
+            protocolname: data.protocolName,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        protocol = response.data;
+        setCustomProtocols((prevProtocols) =>
+          prevProtocols.map((prevProtocol) =>
+            prevProtocol.id === protocol.id ? protocol : prevProtocol
+          )
+        );
+      } catch (err) {
+        console.log("Error updating protocol:", err);
+        enqueueSnackbar("Error updating protocol", { variant: "error" });
+        return;
+      }
+
+      if (protocol) {
+        const temp = renderingExercises.filter((exercise) => exercise.select);
+        const selected = temp.map((exercise, index) => {
+          return {
+            exerciseid: exercise.id,
+            instructions: exercise.instructions,
+            hold: exercise.hold,
+            repeat: exercise.repeat,
+            timesperday: exercise.timesperday,
+            range: exercise.range,
+            resistance: exercise.resistance,
+            direction: exercise.direction,
+          };
+        });
+
+        try {
+          await axios.post(
+            `${process.env.REACT_APP_API_URL}/protexercise/bulk-edit`,
+            {
+              practiceid: user?.practiceId,
+              protocolid: parseInt(protocolId, 10),
+              selected,
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          enqueueSnackbar("Successfully Changed!", { variant: "success" });
+          navigate(`/exercise/${mainId}/${subId}`);
+        } catch (err) {
+          console.log("Error changing protocol:", err);
+          enqueueSnackbar("Error changing protocol", { variant: "error" });
+        }
+      }
+    }
+  };
+
+  const handleDeleteProtocol = (id) => {
+    // Remove the deleted protocol from the local state
+    setCustomProtocols((prevProtocols) =>
+      prevProtocols.filter((protocol) => protocol.id !== id)
     );
   };
 
+  const handleCopyProtocol = (protocol) => {
+    setCustomProtocols((prevProtocols) => [...prevProtocols, protocol]);
+  };
   return (
     <Box display="flex" flexDirection="column" flexGrow={1}>
-      {protocolId !== "new" && protocolId !== undefined ? (
-        <Box sx={{ mt: "40px", ml: "60px" }}>
-          <SendForm />
-        </Box>
-      ) : protocolId === "new" ? (
+      {protocolId ? (
         <Box sx={{ padding: 5 }}>
           <Box sx={{ mb: 5 }}>
             <Box
-              display={"flex"}
-              justifyContent={"space-between"}
-              alignItems={"center"}
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
               sx={{ mb: 3 }}
             >
-              <Typography
-                sx={{
-                  fontSize: "22px",
-                  fontWeight: 600,
-                  color: darkMode
-                    ? getColors.drawerTextDark
-                    : getColors.thumbnailTextLight,
-                  textAlign: "left",
-                }}
-              >
-                Add Protocol
+              <Typography sx={titleStyles}>
+                {protocolId === "new" ? "Add Protocol" : "Edit Protocol"}
               </Typography>
               <Button
                 variant="contained"
-                sx={{
-                  fontSize: "18px",
-                  fontWeight: 500,
-                  fontFamily: "Poppins",
-                  px: 5,
-                  py: "10px",
-                  borderRadius: "5px",
-                }}
-                onClick={() => {
-                  alert("Report");
-                }}
+                sx={reportButtonStyles}
+                onClick={() => alert("Report")}
               >
                 Report
               </Button>
             </Box>
             <form onSubmit={handleSubmit(onAddProtocol)}>
-              <Box
-                display={"flex"}
-                sx={{
-                  padding: "20px",
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: darkMode
-                    ? getColors.appBarBorderDark
-                    : getColors.appBarBorderLight,
-                  gap: 4,
-                  mb: 8,
-                }}
-              >
+              <Box display="flex" sx={formBoxStyles}>
                 <FormControl fullWidth>
                   <TextField
                     fullWidth
@@ -513,72 +559,55 @@ export const MainContent = () => {
                 <Button
                   type="submit"
                   variant="contained"
-                  sx={{
-                    height: 64,
-                    fontSize: "18px",
-                    fontWeight: 500,
-                    fontFamily: "Poppins",
-                    px: 8,
-                    py: 2,
-                    borderRadius: "5px",
-                  }}
+                  sx={submitButtonStyles}
                 >
-                  Add
+                  {protocolId === "new" ? "Add" : "Save"}
                 </Button>
               </Box>
             </form>
           </Box>
+
           <Box sx={{ mb: 8 }}>
-            <Typography
-              sx={{
-                fontSize: "22px",
-                fontWeight: 600,
-                color: darkMode
-                  ? getColors.drawerTextDark
-                  : getColors.thumbnailTextLight,
-                textAlign: "left",
-                mb: 3,
-              }}
-            >
-              Selected Exercises
+            <Typography sx={sectionTitleStyles}>
+              {" "}
+              Selected Exercises{" "}
             </Typography>
             <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={4}>
-              {allExercises
-                .find((exercise) => exercise.id === mainId)
-                ?.subItems?.find((subitem) => subitem.id === subId)
-                ?.exercises?.filter((exercise) => exercise.select === true)
-                .map((treatment, index) => (
+              {renderingExercises
+                .filter((exercise) => exercise.select)
+                .map((exercise, index) => (
                   <SelectedExerciseItem
                     key={index}
-                    {...treatment}
+                    {...exercise}
                     onRemove={handleDeselect}
+                    onChange={(value) => {
+                      const clone = [...selectedExercises];
+                      const exerciseIdx = clone.findIndex(
+                        (exer) => exer.exerciseid === value.id
+                      );
+                      clone[exerciseIdx] = {
+                        ...value,
+                        exerciseid: value.id,
+                      };
+                      setSelectedExercises(clone);
+                    }}
                   />
                 ))}
             </Box>
           </Box>
-          <Box>
-            <Typography
-              sx={{
-                fontSize: "22px",
-                fontWeight: 600,
-                color: darkMode
-                  ? getColors.drawerTextDark
-                  : getColors.thumbnailTextLight,
-                textAlign: "left",
-                mb: 3,
-              }}
-            >
-              Available Exercises
+
+          <Box sx={{ mb: 8 }}>
+            <Typography sx={sectionTitleStyles}>
+              {" "}
+              Available Exercises{" "}
             </Typography>
             <Box display="grid" gridTemplateColumns="repeat(2, 1fr)" gap={4}>
-              {allExercises
-                .find((exercise) => exercise.id === mainId)
-                ?.subItems?.find((subitem) => subitem.id === subId)
-                ?.exercises?.filter((exercise) => exercise.select === false)
-                .map((treatment, index) => (
+              {renderingExercises
+                .filter((exercise) => !exercise.select)
+                .map((exercise, index) => (
                   <AvailableExerciseItem
                     key={index}
-                    {...treatment}
+                    {...exercise}
                     onAdd={handleAddToSelected}
                   />
                 ))}
@@ -586,114 +615,45 @@ export const MainContent = () => {
           </Box>
         </Box>
       ) : !mainId ? (
-        <Box
-          display="flex"
-          flexDirection="column"
-          justifyContent="center"
-          alignItems="center"
-          height="100%"
-        >
-          <Typography
-            sx={{
-              fontSize: "24px",
-              color: theme.palette.text.secondary,
-              textAlign: "center",
-            }}
-          >
-            No exercise category selected.
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: "24px",
-              color: theme.palette.text.secondary,
-              mt: "10px",
-              textAlign: "center",
-            }}
-          >
-            Please choose a body region from the left panel to view relevant
-            exercises.
-          </Typography>
-        </Box>
+        <NoSelectionMessage
+          message="No Protocol Area selected."
+          description="Please choose a body region from the left panel to view relevant exercises."
+        />
       ) : !subId ? (
-        <Box
-          display="flex"
-          flexDirection="column"
-          justifyContent="center"
-          alignItems="center"
-          height="100%"
-        >
-          <Typography
-            sx={{
-              fontSize: "24px",
-              color: theme.palette.text.secondary,
-              textAlign: "center",
-            }}
-          >
-            No condition selected.
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: "24px",
-              color: theme.palette.text.secondary,
-              mt: "10px",
-              textAlign: "center",
-            }}
-          >
-            Please choose an option from the list to view detailed exercises.
-          </Typography>
-        </Box>
+        <NoSelectionMessage
+          message="No condition selected."
+          description="Please choose an option from the list to view detailed exercises."
+        />
       ) : (
-        <Box
-          sx={{
-            mt: "40px",
-            mx: "60px",
-          }}
-        >
-          <Box>
-            <Typography
-              sx={{
-                fontFamily: "Poppins",
-                fontSize: "28px",
-                color: darkMode
-                  ? getColors.drawerTextDark
-                  : getColors.thumbnailTextLight,
-                fontWeight: 600,
-                textAlign: "left",
-              }}
-            >
-              Exercise Protocols for {subId}
-            </Typography>
-            <Box
-              display="grid"
-              gridTemplateColumns="repeat(2, 1fr)"
-              columnGap={5}
-              sx={{ mb: 3 }}
-            >
-              <EBPProtocolItem />
-              {allAddedProtocols.map((protocol, index) => (
-                <CustomProtocolItem key={index} {...protocol} />
-              ))}
-            </Box>
+        <Box sx={protocolsBoxStyles}>
+          <Typography sx={protocolTitleStyles}>
+            Exercise Protocols for {subId}
+          </Typography>
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, 1fr)"
+            columnGap={5}
+            sx={{ mb: 3 }}
+          >
+            {customProtocols.map((protocol, index) => (
+              <CustomProtocolItem
+                key={index}
+                {...protocol}
+                onCopy={handleCopyProtocol}
+                onDelete={handleDeleteProtocol}
+              />
+            ))}
+            {ebProtocols.map((ebprotocol, index) => (
+              <EBPProtocolItem key={index} {...ebprotocol} />
+            ))}
           </Box>
           <Button
             variant="contained"
             startIcon={<Add />}
-            sx={{
-              fontFamily: "Poppins",
-              fontSize: "20px",
-              px: "16px",
-              py: "12px",
-              background: darkMode ? "#2D2E30" : "#E6E6E6",
-              color: darkMode
-                ? getColors.primaryTextDark
-                : getColors.secondaryTextLight,
-              "&:hover": {
-                color: getColors.primaryTextDark,
-              },
-            }}
+            sx={newProtocolButtonStyles}
             onClick={handleNewProtocolClicked}
           >
-            New Protocol
+            New Exercise Protocol
           </Button>
         </Box>
       )}

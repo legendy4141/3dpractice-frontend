@@ -1,21 +1,26 @@
 import React from "react";
 import { ListItem, ListItemText } from "@mui/material";
 import { getColors } from "../../themes/theme";
-import { exerciseData } from "../../utils/exerciseData";
 import { useNavigate, useParams } from "react-router-dom";
+import { useProtocolData } from "../../hooks/protocoldata/useProtocolData";
+import { useAuthContext } from "../../hooks/contexts/useAuthContext";
 
 export const MainList = () => {
   const { mainId } = useParams();
+  const { token } = useAuthContext();
+  const { areas } = useProtocolData(token);
   const navigate = useNavigate();
+
   const handleItemClick = (selectedId) => {
     navigate(`/exercise/${selectedId}`);
   };
+
   return (
     <>
-      {exerciseData.map((item, index) => (
+      {areas.map((item, index) => (
         <ListItem
           key={index}
-          onClick={() => handleItemClick(item.id)}
+          onClick={() => handleItemClick(item.area)}
           sx={{
             fontSize: "22px",
             width: "220px",
@@ -23,14 +28,14 @@ export const MainList = () => {
             px: "28px",
             py: "14px",
             background:
-              mainId === item.id ? getColors.listItemHoverBg : "transparent",
+              mainId === item.area ? getColors.listItemHoverBg : "transparent",
           }}
         >
           <ListItemText
-            primary={item.title}
+            primary={item.area}
             sx={{
               "& .MuiListItemText-primary": {
-                color: mainId === item.id && getColors.primaryTextDark,
+                color: mainId === item.area && getColors.primaryTextDark,
               },
             }}
           />

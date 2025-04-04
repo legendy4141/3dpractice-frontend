@@ -22,15 +22,19 @@ import { ReactComponent as DarkIcon } from "../../assets/viewmode/dark.svg";
 import { ReactComponent as LightIcon } from "../../assets/viewmode/light.svg";
 
 import { ViewModeSelector } from "./ViewModeSelector";
+import { useAuthContext } from "../../hooks/contexts/useAuthContext";
+import { useSnackbar } from "notistack";
 
 export const ModeChangebar = ({
   visibleViewMode = true,
   isDisable = false,
 }) => {
+  const { enqueueSnackbar } = useSnackbar();
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const { darkMode, toggleDarkMode } = useContext(ThemeContext);
+  const { signOut } = useAuthContext();
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -40,9 +44,9 @@ export const ModeChangebar = ({
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
-    handleClose();
-    navigate("/login");
+  const handleLogout = async () => {
+    await signOut();
+    enqueueSnackbar("Logout Successful!", { variant: "success" });
   };
 
   const handleProfileSettings = () => {

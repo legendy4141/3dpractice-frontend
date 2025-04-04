@@ -1,6 +1,6 @@
-import React, { useState, useContext } from "react";
-import { isMobilePhone, isPhoneNumber } from "class-validator";
+import React, { useState, useEffect, useContext } from "react";
 import { useForm } from "react-hook-form";
+// import { useSnackbar } from "notistack";
 import {
   Avatar,
   TextField,
@@ -11,15 +11,19 @@ import {
   FormControl,
 } from "@mui/material";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
-
 import { MuiTelInput } from "mui-tel-input";
-
 import { ThemeContext } from "../../context/ThemeContext";
+import axios from "axios";
+import { jwtDecode } from "../../utils/auth";
+import { useAuthContext } from "../../hooks/contexts/useAuthContext";
 
 const ProfilePage = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [hover, setHover] = useState(false);
   const { darkMode } = useContext(ThemeContext);
+  // const { enqueueSnackbar } = useSnackbar();
+  const { token } = useAuthContext();
+  const userID = jwtDecode(token).userId;
 
   const {
     register,
@@ -27,22 +31,36 @@ const ProfilePage = () => {
     setValue,
     watch,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      practiceName: "Destiny Gray",
-      practiceEmail: "3dconsultation@gmail.com",
-      reportDescription: "Destiny Gray",
-      phoneNumber: "",
-      address1: "1534 Blue Magnolia Road",
-      city: "",
-      state: "",
-      country: "",
-      postalCode: "33510",
-      reportUrl: "",
-      postureCoKey: "5094079603225750",
-      avatar: "",
-    },
-  });
+  } = useForm({});
+
+  useEffect(() => {
+    axios
+      .post(
+        `${process.env.REACT_APP_API_URL}/profile/get`,
+        {
+          userid: userID,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((res) => {
+        setValue("practiceName", res.data.practiceName);
+        setValue("practiceEmail", res.data.practiceEmail);
+        setValue("reportDescription", res.data.reportLinkDescription);
+        setValue("phoneNumber", res.data.phoneNumber);
+        setValue("address1", res.data.addressFirstLine);
+        setValue("address2", res.data.addressSecondLine);
+        setValue("city", res.data.city);
+        setValue("state", res.data.state);
+        setValue("country", res.data.country);
+        setValue("postalCode", res.data.postalCode);
+        setValue("reportUrl", res.data.reportLinkURL);
+        setValue("postureCoKey", res.data.postureCoVideoKey);
+      });
+  }, [setValue, userID, token]);
 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
@@ -53,8 +71,34 @@ const ProfilePage = () => {
     }
   };
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     console.log("Profile Data:", data);
+    // axios
+    //   .post(
+    //     `${process.env.REACT_APP_API_URL}/profile/edit`,
+    //     {
+    //       userid: userID,
+    //     },
+    //     {
+    //       headers: {
+    //         Authorization: `Bearer ${token}`,
+    //       },
+    //     }
+    //   )
+    //   .then((res) => {
+    //     setValue("practiceName", res.data.practiceName);
+    //     setValue("practiceEmail", res.data.practiceEmail);
+    //     setValue("reportDescription", res.data.reportLinkDescription);
+    //     setValue("phoneNumber", res.data.phoneNumber);
+    //     setValue("address1", res.data.addressFirstLine);
+    //     setValue("address2", res.data.addressSecondLine);
+    //     setValue("city", res.data.city);
+    //     setValue("state", res.data.state);
+    //     setValue("country", res.data.country);
+    //     setValue("postalCode", res.data.postalCode);
+    //     setValue("reportUrl", res.data.reportLinkURL);
+    //     setValue("postureCoKey", res.data.postureCoVideoKey);
+    //   });
   };
 
   return (
@@ -165,7 +209,8 @@ const ProfilePage = () => {
             {...register("phoneNumber", {
               required: "Phone number is required",
               validate: (value) => {
-                if (!isPhoneNumber(value) && !isMobilePhone(value)) {
+                const phoneRegex = /^[0-9]{10}$/;
+                if (!phoneRegex.test(value)) {
                   return "Invalid phone number";
                 }
                 return true;
@@ -252,7 +297,6 @@ const ProfilePage = () => {
               variant="filled"
               {...register("postalCode", {
                 required: "Postal Code is required",
-                pattern: { value: /^[0-9]+$/, message: "Invalid postal code" },
               })}
               error={!!errors.postalCode}
               helperText={errors.postalCode?.message}
@@ -268,6 +312,7 @@ const ProfilePage = () => {
           />
           <TextField
             fullWidth
+            disabled
             label="PostureCo Video Key"
             variant="filled"
             {...register("postureCoKey")}

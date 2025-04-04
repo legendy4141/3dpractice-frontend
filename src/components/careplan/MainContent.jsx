@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Box, Button, FormControl, TextField, Typography } from "@mui/material";
 import { useForm } from "react-hook-form";
@@ -17,13 +17,22 @@ import { AvailableTreatmentItem } from "./AvailableTreatmentItem";
 import { Add } from "@mui/icons-material";
 import SendIcon from "@mui/icons-material/Send";
 import ChangeCircleOutlinedIcon from "@mui/icons-material/ChangeCircleOutlined";
+import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import { CarePlanItem } from "./CarePlanItem";
 import { SendDialog } from "./SendDialog";
+import { useAuthContext } from "../../hooks/contexts/useAuthContext";
+import axios from "axios";
+import { enqueueSnackbar } from "notistack";
+import { useProtocolData } from "../../hooks/protocoldata/useProtocolData";
+import { AvailablePhaseItem } from "./AvailablePhaseItem";
+import { SelectedPhaseItem } from "./SelectedPhaseItem";
+import { SendWithExerciseDialog } from "./SendWithExerciseDialog";
 
 export const MainContent = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -31,683 +40,471 @@ export const MainContent = () => {
     },
   });
   const navigate = useNavigate();
-
-  const availableTreatmentData = [
-    {
-      id: "active-release-technique",
-      title: "Active Release Technique",
-      select: false,
-    },
-    { id: "class-iv-laser", title: "Class IV Laser", select: false },
-    { id: "creams-ointments", title: "Creams / Ointments", select: false },
-    { id: "cold-therapy", title: "Cold Therapy", select: false },
-    {
-      id: "decompression-therapy",
-      title: "Decompression Therapy",
-      select: false,
-    },
-    { id: "diathermy", title: "Diathermy", select: false },
-    { id: "dry-needling", title: "Dry Needling", select: false },
-    {
-      id: "electric-muscle-stimulation",
-      title: "Electric Muscles Stimulation",
-      select: false,
-    },
-    {
-      id: "electrical-nerve-stimulation",
-      title: "Electrical Nerve Stimulation",
-      select: false,
-    },
-    { id: "ergonomics", title: "Ergonomics", select: false },
-    { id: "exercise", title: "Exercise", select: false },
-    { id: "flexion-distraction", title: "Flexion Distraction", select: false },
-    { id: "graston-technique", title: "Graston Technique", select: false },
-    { id: "heat-cold", title: "Heat & Cold", select: false },
-    { id: "heat-therapy", title: "Heat Therapy", select: false },
-    { id: "hydrotherapy", title: "Hydrotherapy", select: false },
-    {
-      id: "hyaluronic-knee-injections",
-      title: "Hyaluronic Knee Injections",
-      select: false,
-    },
-    {
-      id: "ice-and-heat-therapy",
-      title: "Ice and Heat Therapy",
-      select: false,
-    },
-    { id: "infrared-therapy", title: "Infrared Therapy", select: false },
-    {
-      id: "intersegmental-traction",
-      title: "Intersegmental Traction",
-      select: false,
-    },
-    { id: "laser-therapy", title: "Laser Therapy", select: false },
-    { id: "massage-therapy", title: "Massage Therapy", select: false },
-    { id: "myofascial-release", title: "Myofascial Release", select: false },
-    { id: "orthotics", title: "Orthotics", select: false },
-    {
-      id: "pelvic-stabilization",
-      title: "Pelvic Stabilization",
-      select: false,
-    },
-    { id: "pemf-therapy", title: "PEMF Therapy", select: false },
-    {
-      id: "platelet-rich-plasma",
-      title: "Platelet Rich Plasma",
-      select: false,
-    },
-    { id: "red-light-therapy", title: "Red Light Therapy", select: false },
-    { id: "shockwave-therapy", title: "Shockwave Therapy", select: false },
-    {
-      id: "sigma-systems-ultralign",
-      title: "Sigma Systems Ultralign",
-      select: false,
-    },
-    { id: "spinal-adjustment", title: "Spinal Adjustment", select: false },
-    {
-      id: "spine-rehab-posture-correction",
-      title: "Spine Rehab & Posture Correction",
-      select: false,
-    },
-    { id: "steroid-injection", title: "Steroid Injection", select: false },
-    { id: "supplements", title: "Supplements", select: false },
-    { id: "supplies", title: "Supplies", select: false },
-    {
-      id: "trigger-point-injections",
-      title: "Trigger Point Injections",
-      select: false,
-    },
-    { id: "traction", title: "Traction", select: false },
-    { id: "ultrasound", title: "Ultrasound", select: false },
-    { id: "vibration-therapy", title: "Vibration Therapy", select: false },
-  ];
-
-  const [allPhases, setAllPhases] = useState([
-    {
-      id: "acute",
-      name: "Acute",
-      description: "Acute description",
-      frequency: 3,
-      duration: 10,
-      active: 1,
-      default: true,
-    },
-    {
-      id: "corrective",
-      name: "Corrective",
-      description: "Corrective description",
-      frequency: 5,
-      duration: 8,
-      active: 2,
-      default: true,
-    },
-    {
-      id: "crisis-care-phase",
-      name: "Crisis Care Phase",
-      description: "Crisis Care Phase description",
-      frequency: 2,
-      duration: 12,
-      active: 3,
-      default: false,
-    },
-    {
-      id: "critical-transition-phase",
-      name: "Critical Transition Phase",
-      description: "Critical Transition Phase description",
-      frequency: 6,
-      duration: 9,
-      active: 2,
-      default: false,
-    },
-    {
-      id: "intensive",
-      name: "Intensive",
-      description: "Intensive description",
-      frequency: 8,
-      duration: 14,
-      active: 3,
-      default: false,
-    },
-    {
-      id: "lifestyle-care-phase",
-      name: "LifeStyle Care Phase",
-      description: "LifeStyle Care Phase description",
-      frequency: 1,
-      duration: 5,
-      active: 1,
-      default: false,
-    },
-    {
-      id: "maintenance",
-      name: "Maintenance",
-      description: "Maintenance description",
-      frequency: 4,
-      duration: 7,
-      active: 2,
-      default: false,
-    },
-    {
-      id: "recovery",
-      name: "Recovery",
-      description: "Recovery description",
-      frequency: 7,
-      duration: 13,
-      active: 1,
-      default: false,
-    },
-    {
-      id: "rehabilitative",
-      name: "Rehabilitative",
-      description: "Rehabilitative description",
-      frequency: 3,
-      duration: 10,
-      active: 2,
-      default: false,
-    },
-    {
-      id: "relief",
-      name: "Relief",
-      description: "Relief description",
-      frequency: 2,
-      duration: 6,
-      active: 3,
-      default: false,
-    },
-    {
-      id: "wellness",
-      name: "Wellness",
-      description: "Wellness description",
-      frequency: 1,
-      duration: 4,
-      active: 1,
-      default: true,
-    },
-  ]);
-
-  const [allAddedCarePlans, setAllAddedCarePlans] = useState([
-    {
-      id: "careplan1",
-      name: "CarePlan1",
-      current_phase: [...allPhases],
-      // selected_treatments: [],
-      available_treatments: [...availableTreatmentData],
-    },
-    {
-      id: "careplan2",
-      name: "CarePlan2",
-      current_phase: [...allPhases],
-      // selected_treatments: [],
-      available_treatments: [...availableTreatmentData],
-    },
-    {
-      id: "careplan3",
-      name: "CarePlan3",
-      current_phase: [...allPhases],
-      // selected_treatments: [],
-      available_treatments: [...availableTreatmentData],
-    },
-  ]);
-
+  const { user, token } = useAuthContext();
+  const [allPhases, setAllPhases] = useState([]);
+  const [currentPhases, setCurrentPhases] = useState([]);
+  const [defaultPhaseID, setDefaultPhaseID] = useState([]);
+  const [defaultPhases, setDefaultPhases] = useState([]);
   const { mainId, careId, subId } = useParams();
   const { darkMode } = useContext(ThemeContext);
   const [phaseActionType, setPhaseActionType] = useState("add");
   const [phaseDialogOpen, setPhaseDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [sendWithExerciseDialogOpen, setSendWithExerciseDialogOpen] =
+    useState(false);
   const [phaseToEdit, setPhaseToEdit] = useState(null);
-  const [allTreatments, setAllTreatments] = useState([
-    {
-      id: "ankle",
-      title: "Ankle",
-      subItems: [
+  const { areas } = useProtocolData(token);
+  const { conditions } = useProtocolData(token);
+  const [allTreatments, setAllTreatments] = useState([]);
+  const [selectedTreatments, setSelectedTreatments] = useState([]);
+  const [openPhaseSection, setOpenPhaseSection] = useState(false);
+  const [allCarePlans, setAllCarePlans] = useState([]);
+  const [conditionID, setConditionID] = useState();
+  const [currentCareplanData, setCurrentCareplanData] = useState();
+
+  const selectedCondition = conditions[careId] || [];
+
+  const renderingTreatments = useMemo(() => {
+    return allTreatments.map((treatment) => {
+      const selectedTreatment = selectedTreatments.find(
+        (treat) => treat.id === treatment.id
+      );
+      return selectedTreatment
+        ? {
+            ...treatment,
+            select: true,
+          }
+        : { ...treatment, select: false };
+    });
+  }, [allTreatments, selectedTreatments]);
+
+  useEffect(() => {
+    if (!user || !token || mainId !== undefined) return;
+    const fetchAllCarePlans = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/careplan/practiceid/${user?.practiceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.join() !== allCarePlans.join()) {
+          setAllCarePlans(response.data); // Only set state if the data is different
+        }
+
+        //fetch default phaseid
+      } catch (err) {
+        console.log("Error fetching all phases:", err);
+      }
+    };
+
+    fetchAllCarePlans();
+  }, [token, allCarePlans, user, mainId]);
+
+  useEffect(() => {
+    if (!user || !token) return;
+    const fetchAllPhases = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/phase/securitytype/${user?.securityType}/practiceid/${user?.practiceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.data.join() !== allPhases.join()) {
+          setAllPhases(response.data); // Only set state if the data is different
+        }
+
+        //fetch default phaseid
+        const response1 = await axios.get(
+          `${process.env.REACT_APP_API_URL}/practice/${user?.practiceId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const result = response1.data;
+        setDefaultPhaseID(
+          result.phasedefaults
+            ?.split(",")
+            .map((id) => id.trim()) // Trim spaces
+            .filter((id) => id !== "") // Remove empty values
+            .map(Number) // Convert to numbers
+        );
+      } catch (err) {
+        console.log("Error fetching all phases:", err);
+      }
+    };
+
+    fetchAllPhases();
+  }, [token, allPhases, user, mainId]);
+
+  useEffect(() => {
+    const filteredPhases = allPhases.filter((phase) =>
+      defaultPhaseID.some((id) => id === phase.id)
+    );
+    setDefaultPhases(filteredPhases);
+  }, [defaultPhaseID, allPhases]);
+
+  useEffect(() => {
+    setCurrentCareplanData({
+      phasesData: currentPhases || [],
+      treatmentsData: selectedTreatments || [],
+    });
+  }, [currentPhases, selectedTreatments]);
+
+  useEffect(() => {
+    if (
+      !user ||
+      !token ||
+      mainId !== "new-plan" ||
+      careId === undefined ||
+      subId === undefined
+    ) {
+      return;
+    }
+    setSelectedTreatments([]);
+    setOpenPhaseSection(false);
+    setValue("careplanName", "");
+    setCurrentPhases(defaultPhases);
+    const fetchAllTreatments = async () => {
+      try {
+        const treatmentResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/treatment/securitytype/${user.securityType}/practiceid/${user.practiceId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const treatmentData = treatmentResponse.data;
+
+        const conditionResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/condition/area/${careId}/acondition/${subId}/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const treatmentList = `,${conditionResponse.data.treatmentlist},`;
+        setConditionID(conditionResponse.data.id);
+
+        // Filter treatments matching the IDs in treatmentList
+        const matchingTreatments = treatmentData.filter((treatment) =>
+          treatmentList.includes(`,${treatment.id},`)
+        );
+
+        setAllTreatments((prev) => {
+          if (prev.join() !== matchingTreatments.join()) {
+            return matchingTreatments;
+          }
+          return prev;
+        });
+      } catch (error) {
+        console.error("Error fetching treatments:", error);
+      }
+    };
+
+    fetchAllTreatments();
+  }, [token, user, mainId, careId, subId, setValue, defaultPhases]);
+
+  useEffect(() => {
+    if ((careId !== "modify" && careId !== "copy") || !user || !token) return;
+    setOpenPhaseSection(false);
+    const fetchCarePlanByID = async () => {
+      try {
+        const response = await axios.get(
+          `${process.env.REACT_APP_API_URL}/careplan/${mainId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setValue("careplanName", response.data.careplanname);
+        if (careId === "copy")
+          setValue("careplanName", `Copy of ${response.data.careplanname}`);
+        const phasesOrder = response.data.phaseorder;
+
+        const planphaseResponse = await axios.post(
+          `${process.env.REACT_APP_API_URL}/planphase/practiceid/${user?.practiceId}/careplanid/${mainId}`,
+          { phaseids: phasesOrder },
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        console.log("PlanPhasesResponse", planphaseResponse.data);
+        setCurrentPhases(planphaseResponse.data);
+
+        const plantreatmentResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/plantreatment/practiceid/${user?.practiceId}/careplanid/${mainId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        console.log("PlanTreatmentPhases", plantreatmentResponse.data);
+        setSelectedTreatments(plantreatmentResponse.data);
+
+        const res = await axios.get(
+          `${process.env.REACT_APP_API_URL}/careplan/${mainId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const conditionIDs = res.data.conditions;
+        const conditionID = conditionIDs.split(",").filter(Boolean).map(Number);
+
+        const conditionResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/condition/${conditionID[0]}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const treatmentList = `,${conditionResponse.data.treatmentlist},`;
+
+        const treatmentResponse = await axios.get(
+          `${process.env.REACT_APP_API_URL}/treatment/securitytype/${user.securityType}/practiceid/${user.practiceId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const treatmentData = treatmentResponse.data;
+        // Filter treatments matching the IDs in treatmentList
+        const matchingTreatments = treatmentData.filter((treatment) =>
+          treatmentList.includes(`,${treatment.id},`)
+        );
+
+        setAllTreatments((prev) => {
+          if (prev.join() !== matchingTreatments.join()) {
+            return matchingTreatments;
+          }
+          return prev;
+        });
+      } catch (error) {
+        console.log("Error Fetch CarePlan", error);
+      }
+    };
+    fetchCarePlanByID();
+  }, [token, careId, setValue, allPhases, user, mainId]);
+
+  const handleCarePlanClicked = () => {
+    // setSendWithExerciseDialogOpen(true);
+  };
+
+  const handleDeleteCarePlan = (id) => {
+    // Remove the deleted protocol from the local state
+    setAllCarePlans((prevCarePlans) =>
+      prevCarePlans.filter((careplan) => careplan.id !== id)
+    );
+  };
+
+  const sendUpdatedPhases = async (updatedPhases) => {
+    try {
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL}/practice/${user?.practiceId}`,
+        { phasedefaults: updatedPhases },
         {
-          id: "ankle-sprain",
-          title: "Ankle Sprain",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "cervical",
-      title: "Cervical",
-      subItems: [
-        {
-          id: "bulging-disc",
-          title: "Bulging disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "cervical-radiculopathy",
-          title: "Cervical radiculopathy",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "degenerated-disc",
-          title: "Degenerated disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "facet-syndrome",
-          title: "Facet Syndrome",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "forward-head-posture",
-          title: "Forward Head Posture",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "herniated-disc",
-          title: "Herniated disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "kyphosis",
-          title: "Kyphosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "lordosis",
-          title: "Lordosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "neck-pain",
-          title: "Neck Pain",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "spondylolithesis",
-          title: "Spondylolithesis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "stenosis",
-          title: "Stenosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "subluxation",
-          title: "Subluxation",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "elbow",
-      title: "Elbow",
-      subItems: [
-        {
-          id: "epicondylitis",
-          title: "Epicondylitis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "foot",
-      title: "Foot",
-      subItems: [
-        {
-          id: "plantar-fasciitis",
-          title: "Plantar Fasciitis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "pronation",
-          title: "Pronation",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "supination",
-          title: "Supination",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "hip",
-      title: "Hip",
-      subItems: [
-        {
-          id: "piriformis-syndrome",
-          title: "Piriformis Syndrome",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "knee",
-      title: "Knee",
-      subItems: [
-        {
-          id: "acl-injury",
-          title: "ACL Injury",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "mcl-injury",
-          title: "MCL Injury",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "meniscus-tear",
-          title: "Meniscus Tear",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "osteoarthritis",
-          title: "Osteoarthritis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "lumbar",
-      title: "Lumbar",
-      subItems: [
-        {
-          id: "bulging-disc",
-          title: "Bulging disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "cervical-radiculopathy",
-          title: "Cervical radiculopathy",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "degenerated-disc",
-          title: "Degenerated disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "facet-syndrome",
-          title: "Facet Syndrome",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "forward-head-posture",
-          title: "Forward Head Posture",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "herniated-disc",
-          title: "Herniated disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "kyphosis",
-          title: "Kyphosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "lordosis",
-          title: "Lordosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "neck-pain",
-          title: "Neck Pain",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "spondylolithesis",
-          title: "Spondylolithesis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "stenosis",
-          title: "Stenosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "subluxation",
-          title: "Subluxation",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "pelvis",
-      title: "Pelvis",
-      subItems: [
-        {
-          id: "psoas-hip-flexor-tightness",
-          title: "Psoas & Hip Flexor Tightness",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "shoulder",
-      title: "Shoulder",
-      subItems: [
-        {
-          id: "adhesive-capsulitis",
-          title: "Adhesive Capsulitis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "impingement",
-          title: "Impingement",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "rotator-cuff-injury",
-          title: "Rotator Cuff Injury",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "thoracic",
-      title: "Thoracic",
-      subItems: [
-        {
-          id: "bulging-disc",
-          title: "Bulging disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "degenerated-disc",
-          title: "Degenerated disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "facet-syndrome",
-          title: "Facet Syndrome",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "herniated-disc",
-          title: "Herniated disc",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "kyphosis",
-          title: "Kyphosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "lordosis",
-          title: "Lordosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "scoliosis",
-          title: "Scoliosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "spondylolithesis",
-          title: "Spondylolithesis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "stenosis",
-          title: "Stenosis",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "subluxation",
-          title: "Subluxation",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-        {
-          id: "thoracic-pain",
-          title: "Thoracic Pain",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-    {
-      id: "wrist",
-      title: "Wrist",
-      subItems: [
-        {
-          id: "carpal-tunnel",
-          title: "Carpal Tunnel",
-          treatments: [...availableTreatmentData],
-          phases: [...allPhases],
-        },
-      ],
-    },
-  ]);
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      console.log("API Response:", response.data);
+    } catch (error) {
+      console.error("Error updating default phases:", error);
+    }
+  };
 
   const handleChangePhases = () => {
-    alert("Change Phases");
+    setOpenPhaseSection(!openPhaseSection);
   };
 
-  const handleDeselect = (id) => {
-    setAllTreatments((prevTreatments) =>
-      prevTreatments.map((careplan) =>
-        careplan.id === careId
-          ? {
-              ...careplan,
-              subItems: careplan.subItems.map((subitem) =>
-                subitem.id === subId
-                  ? {
-                      ...subitem,
-                      treatments: subitem.treatments.map((treatment) =>
-                        treatment.id === id
-                          ? { ...treatment, select: false }
-                          : { ...treatment }
-                      ),
-                    }
-                  : subitem
-              ),
-            }
-          : careplan
-      )
+  const handleDeselectTreatment = (id) => {
+    setSelectedTreatments((prevSelected) =>
+      prevSelected.filter((treatment) => treatment.id !== id)
     );
   };
 
-  const handleAddToSelected = (id) => {
-    setAllTreatments((prevTreatments) =>
-      prevTreatments.map((careplan) =>
-        careplan.id === careId
-          ? {
-              ...careplan,
-              subItems: careplan.subItems.map((subitem) =>
-                subitem.id === subId
-                  ? {
-                      ...subitem,
-                      treatments: subitem.treatments.map((treatment) =>
-                        treatment.id === id
-                          ? { ...treatment, select: true }
-                          : { ...treatment }
-                      ),
-                    }
-                  : subitem
-              ),
-            }
-          : careplan
-      )
-    );
-  };
-
-  const onSubmit = (data) => {
-    const newCarePlan = {
-      id: `new-${Date.now()}`,
-      name: data.careplanName,
-      current_phase: [...allPhases],
-      available_treatments: [...availableTreatmentData],
-    };
-    setAllAddedCarePlans((prevCarePlans) => [...prevCarePlans, newCarePlan]);
-    navigate("/care-plan");
-  };
-
-  const onSaveCarePlan = (data) => {
-    setAllAddedCarePlans((prevCarePlans) =>
-      prevCarePlans.map((careplan) =>
-        careplan.id === mainId
-          ? { ...careplan, name: data.careplanName }
-          : { ...careplan }
-      )
+  const handleAddToSelectedTreatment = (id) => {
+    const treatmentToAdd = allTreatments.find(
+      (treatment) => treatment.id === id
     );
 
-    navigate("/care-plan");
+    // If the treatment exists and it's not already in selectedTreatments, add it
+    if (
+      treatmentToAdd &&
+      !selectedTreatments.some((treatment) => treatment.id === id)
+    ) {
+      setSelectedTreatments((prevSelected) => [
+        ...prevSelected,
+        treatmentToAdd,
+      ]);
+    }
+  };
+
+  const handleAddToSelectedPhase = (id) => {
+    const newSelected = [
+      ...currentPhases,
+      {
+        ...allPhases.find((phase) => phase.id === id),
+      },
+    ];
+    setCurrentPhases(newSelected);
+  };
+
+  const handleDeselectPhase = (id) => {
+    setCurrentPhases(currentPhases.filter((phase) => phase.id !== id));
+  };
+
+  const onSubmit = async (data) => {
+    try {
+      //CarePlan Response
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/careplan`,
+        {
+          practiceid: user?.practiceId,
+          conditions: `,${conditionID}`,
+          careplanname: data.careplanName,
+          repeattime: "",
+          duration: "",
+          active: "",
+          phaseorder: currentPhases.map((phase) => phase.id).join(",") + ",",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const newCarePlan = response.data;
+
+      //phaseResponse
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/planphase`,
+        {
+          practiceid: user?.practiceId,
+          careplanid: newCarePlan.id,
+          phases: currentPhases,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      //treatmentResponse
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/plantreatment`,
+        {
+          practiceid: user?.practiceId,
+          careplanid: newCarePlan.id,
+          treatments: selectedTreatments,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      enqueueSnackbar("Successfully Created!", { variant: "success" });
+
+      setAllCarePlans((prevPhases) =>
+        [...prevPhases, newCarePlan].sort((a, b) =>
+          a.careplanname.localeCompare(b.careplanname)
+        )
+      );
+      navigate("/care-plan");
+    } catch (error) {
+      console.error("Error creating careplan:", error);
+      enqueueSnackbar("Error creating careplan!", { variant: "error" });
+    }
+  };
+
+  const onSaveCarePlan = async (data) => {
+    try {
+      //CarePlan Response
+      const response = await axios.put(
+        `${process.env.REACT_APP_API_URL}/careplan/${mainId}`,
+        {
+          practiceid: user?.practiceId,
+          conditions: `,${conditionID}`,
+          careplanname: data.careplanName,
+          repeattime: "",
+          duration: "",
+          active: "",
+          phaseorder: currentPhases.map((phase) => phase.id).join(",") + ",",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const newCarePlan = response.data;
+
+      //phaseResponse
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/planphase/bulkedit`,
+        {
+          practiceid: user?.practiceId,
+          careplanid: newCarePlan.id,
+          phases: currentPhases,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      //treatmentResponse
+      await axios.post(
+        `${process.env.REACT_APP_API_URL}/plantreatment/bulkedit`,
+        {
+          practiceid: user?.practiceId,
+          careplanid: newCarePlan.id,
+          treatments: selectedTreatments,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      enqueueSnackbar("Successfully Changed!", { variant: "success" });
+
+      setAllCarePlans((prevPhases) =>
+        [...prevPhases, newCarePlan].sort((a, b) =>
+          a.careplanname.localeCompare(b.careplanname)
+        )
+      );
+      navigate("/care-plan");
+    } catch (error) {
+      console.error("Error creating careplan:", error);
+      enqueueSnackbar("Error creating careplan!", { variant: "error" });
+    }
   };
 
   const addPhaseBtnClicked = () => {
     setPhaseActionType("add");
     setPhaseToEdit({
-      id: `new-${Date.now()}`,
       name: "",
       description: "",
       frequency: "",
       duration: "",
       active: "",
-      default: false,
     });
     setPhaseDialogOpen(true);
   };
@@ -719,14 +516,18 @@ export const MainContent = () => {
       setPhaseToEdit({
         ...phaseToCopy,
         name: `Copy of ${phaseToCopy.name}`,
-        default: false,
       });
       setPhaseDialogOpen(true);
     }
   };
 
-  const handleCarePlanClicked = () => {
-    setSendDialogOpen(true);
+  const handleEditCurrentClicked = (id) => {
+    setPhaseActionType("current-edit");
+    const phaseToCopy = currentPhases.find((phase) => phase.id === id);
+    if (phaseToCopy) {
+      setPhaseToEdit({ ...phaseToCopy });
+      setPhaseDialogOpen(true);
+    }
   };
 
   const handleEditClicked = (id) => {
@@ -735,36 +536,77 @@ export const MainContent = () => {
     if (phaseToCopy) {
       setPhaseToEdit({
         ...phaseToCopy,
-        default: false,
       });
       setPhaseDialogOpen(true);
     }
   };
 
   const handleRemoveClicked = (id) => {
-    setAllPhases((prevPhases) =>
-      prevPhases.map((phase) =>
-        phase.id === id ? { ...phase, default: false } : phase
-      )
-    );
+    setDefaultPhases((prevPhases) => {
+      const updatedPhases = prevPhases.filter((phase) => phase.id !== id);
+
+      // Prepare the updated phase IDs as a comma-separated string
+      const phaseIdsString =
+        updatedPhases.map((phase) => phase.id).join(",") + ",";
+
+      // Make API call to update the backend
+      sendUpdatedPhases(phaseIdsString);
+
+      return updatedPhases;
+    });
   };
 
-  const handleSetDefault = (id) => {
-    setAllPhases((prevPhases) =>
-      prevPhases.map((phase) =>
-        phase.id === id ? { ...phase, default: true } : { ...phase }
-      )
-    );
+  const handleSetDefault = async (id) => {
+    // Update the state first
+    setDefaultPhases((prevPhases) => {
+      const newPhase = allPhases.find((phase) => phase.id === id);
+      const alreadyExists = prevPhases.some((phase) => phase.id === id);
+
+      // Only add if it doesn't exist
+      const updatedPhases =
+        newPhase && !alreadyExists ? [...prevPhases, newPhase] : prevPhases;
+
+      const phaseIdsString =
+        updatedPhases.map((phase) => phase.id).join(",") + ",";
+
+      sendUpdatedPhases(phaseIdsString);
+
+      return updatedPhases;
+    });
   };
 
-  const handleCopyNewPhase = (newPhase) => {
-    setAllPhases((prevPhases) => [
-      ...prevPhases,
-      {
-        ...newPhase,
-        id: `new-${Date.now()}`,
-      },
-    ]);
+  const handleCopyNewPhase = async (updatedPhase) => {
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_URL}/phase`,
+        {
+          practiceid: user?.practiceId,
+          name: updatedPhase.name,
+          description: updatedPhase.description,
+          repeattime: updatedPhase.repeattime,
+          duration: updatedPhase.duration,
+          active: updatedPhase.active,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      enqueueSnackbar("Successfully Copied!", { variant: "success" });
+      const newID = response.data.id;
+      setAllPhases((prevPhases) =>
+        [
+          ...prevPhases,
+          {
+            ...updatedPhase,
+            id: newID,
+          },
+        ].sort((a, b) => a.name.localeCompare(b.name))
+      );
+    } catch (error) {
+      console.error("Error adding default phases:", error);
+    }
     setPhaseDialogOpen(false);
   };
 
@@ -775,13 +617,17 @@ export const MainContent = () => {
     setPhaseDialogOpen(false);
   };
 
+  const handleEditCurrentPhase = (editPhase) => {
+    console.log("edited", editPhase);
+    setCurrentPhases((prevPhases) =>
+      prevPhases.map((phase) => (phase.id === editPhase.id ? editPhase : phase))
+    );
+    setPhaseDialogOpen(false);
+  };
+
   const handleCloseDialog = () => {
     setPhaseDialogOpen(false);
     setPhaseToEdit(null);
-  };
-
-  const filterPhasesByDefault = (value) => {
-    return allPhases.filter((phase) => phase.default === value);
   };
 
   return (
@@ -805,11 +651,12 @@ export const MainContent = () => {
                 Treatment Care Plans
               </Typography>
               <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap={3}>
-                {allAddedCarePlans.map((careplan, index) => (
+                {allCarePlans.map((careplan, index) => (
                   <CarePlanItem
                     key={index}
                     {...careplan}
-                    handleClick={handleCarePlanClicked}
+                    onClick={handleCarePlanClicked}
+                    onDelete={handleDeleteCarePlan}
                   />
                 ))}
               </Box>
@@ -867,7 +714,7 @@ export const MainContent = () => {
                 gap={3}
                 sx={{ mb: 10 }}
               >
-                {filterPhasesByDefault(true).map((phase, index) => (
+                {defaultPhases.map((phase, index) => (
                   <DefaultPhaseItem
                     key={index}
                     {...phase}
@@ -926,7 +773,7 @@ export const MainContent = () => {
                   gap={3}
                   sx={{ mb: 7 }}
                 >
-                  {allTreatments.map((carearea, index) => (
+                  {areas.map((carearea, index) => (
                     <CareAreaItem key={index} {...carearea} />
                   ))}
                 </Box>
@@ -954,11 +801,9 @@ export const MainContent = () => {
                       gridTemplateColumns="repeat(2, 1fr)"
                       gap={4}
                     >
-                      {allTreatments
-                        .find((exercise) => exercise.id === careId)
-                        ?.subItems.map((careArea, index) => (
-                          <CareSubAreaItem key={index} {...careArea} />
-                        ))}
+                      {selectedCondition.map((condition, index) => (
+                        <CareSubAreaItem key={index} condition={condition} />
+                      ))}
                     </Box>
                   </Box>
                 ) : (
@@ -981,17 +826,7 @@ export const MainContent = () => {
                           textAlign: "left",
                         }}
                       >
-                        {`Create Care Plan for ${
-                          allTreatments.filter(
-                            (exercise) => exercise.id === careId
-                          )[0].title
-                        } ${
-                          allTreatments
-                            .filter((exercise) => exercise.id === careId)[0]
-                            ?.subItems.filter(
-                              (subitem) => subitem.id === subId
-                            )[0].title
-                        }`}
+                        {`Create Care Plan for ${careId} ${subId}`}
                       </Typography>
                       <Button
                         variant="contained"
@@ -1073,19 +908,28 @@ export const MainContent = () => {
                           textAlign: "left",
                         }}
                       >
-                        Current Phases
+                        {openPhaseSection
+                          ? "Selected Phases"
+                          : "Current Phases"}
                       </Typography>
+
                       <Button
                         variant="contained"
                         startIcon={
-                          <ChangeCircleOutlinedIcon
-                            style={{ fontSize: 28, marginRight: 8 }}
-                          />
+                          openPhaseSection ? (
+                            <SaveOutlinedIcon
+                              style={{ fontSize: 28, marginRight: 8 }}
+                            />
+                          ) : (
+                            <ChangeCircleOutlinedIcon
+                              style={{ fontSize: 28, marginRight: 8 }}
+                            />
+                          )
                         }
                         sx={{
                           fontFamily: "Poppins",
                           fontSize: "20px",
-                          px: "16px",
+                          width: "250px",
                           py: "12px",
                           background: darkMode ? "#2D2E30" : "#E6E6E6",
                           color: darkMode
@@ -1097,91 +941,149 @@ export const MainContent = () => {
                         }}
                         onClick={handleChangePhases}
                       >
-                        Change Phases
+                        {openPhaseSection ? "Save Changes" : "Change Phases"}
                       </Button>
                     </Box>
-                    <Box
-                      display="grid"
-                      gridTemplateColumns="repeat(3, 1fr)"
-                      gap={4}
-                      mb={8}
-                    >
-                      {allPhases.map((phase, index) => (
-                        <CurrentPhaseItem
-                          key={index}
-                          {...phase}
-                          onEdit={handleEditClicked}
-                        />
-                      ))}
-                    </Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: "28px",
-                        fontWeight: 500,
-                        color: darkMode
-                          ? getColors.drawerTextDark
-                          : getColors.thumbnailTextLight,
-                        textAlign: "left",
-                        mb: 5,
-                      }}
-                    >
-                      Selected Treatments
-                    </Typography>
-                    <Box
-                      display="grid"
-                      gridTemplateColumns="repeat(3, 1fr)"
-                      gap={4}
-                      mb={8}
-                    >
-                      {allTreatments
-                        .find((careplan) => careplan.id === careId)
-                        ?.subItems?.find((subitem) => subitem.id === subId)
-                        ?.treatments?.filter(
-                          (treatment) => treatment.select === true
-                        )
-                        .map((treatment, index) => (
-                          <SelectedTreatmentItem
+                    {openPhaseSection ? (
+                      <Box
+                        display="grid"
+                        gridTemplateColumns="repeat(3, 1fr)"
+                        gap={4}
+                        mb={8}
+                      >
+                        {currentPhases.map((phase, index) => (
+                          <SelectedPhaseItem
                             key={index}
-                            {...treatment}
-                            onRemove={handleDeselect}
+                            {...phase}
+                            onRemove={handleDeselectPhase}
                           />
                         ))}
-                    </Box>
-
-                    <Typography
-                      sx={{
-                        fontSize: "28px",
-                        fontWeight: 500,
-                        color: darkMode
-                          ? getColors.drawerTextDark
-                          : getColors.thumbnailTextLight,
-                        textAlign: "left",
-                        mb: 5,
-                      }}
-                    >
-                      Available Treatments
-                    </Typography>
-                    <Box
-                      display="grid"
-                      gridTemplateColumns="repeat(3, 1fr)"
-                      gap={4}
-                      mb={8}
-                    >
-                      {allTreatments
-                        .find((careplan) => careplan.id === careId)
-                        ?.subItems?.find((subitem) => subitem.id === subId)
-                        ?.treatments?.filter(
-                          (treatment) => treatment.select === false
-                        )
-                        .map((treatment, index) => (
-                          <AvailableTreatmentItem
+                      </Box>
+                    ) : (
+                      <Box
+                        display="grid"
+                        gridTemplateColumns="repeat(3, 1fr)"
+                        gap={4}
+                        mb={8}
+                      >
+                        {currentPhases.map((phase, index) => (
+                          <CurrentPhaseItem
                             key={index}
-                            {...treatment}
-                            onAdd={handleAddToSelected}
+                            {...phase}
+                            onEdit={handleEditCurrentClicked}
                           />
                         ))}
-                    </Box>
+                      </Box>
+                    )}
+                    {openPhaseSection && (
+                      <>
+                        <Typography
+                          sx={{
+                            fontSize: "28px",
+                            fontWeight: 500,
+                            color: darkMode
+                              ? getColors.drawerTextDark
+                              : getColors.thumbnailTextLight,
+                            textAlign: "left",
+                            mb: "30px",
+                          }}
+                        >
+                          Available Phases
+                        </Typography>
+                        <Box
+                          display="grid"
+                          gridTemplateColumns="repeat(3, 1fr)"
+                          gap={4}
+                          mb={8}
+                        >
+                          {allPhases
+                            .filter(
+                              (phase) =>
+                                !currentPhases.some(
+                                  (currentPhase) => currentPhase.id === phase.id
+                                )
+                            ) // Filter out phases that already exist in currentPhases
+                            .map((phase, index) => (
+                              <AvailablePhaseItem
+                                key={index}
+                                {...phase}
+                                onAdd={handleAddToSelectedPhase}
+                              />
+                            ))}
+                        </Box>
+                      </>
+                    )}
+                    {!openPhaseSection && (
+                      <>
+                        <Typography
+                          sx={{
+                            fontSize: "28px",
+                            fontWeight: 500,
+                            color: darkMode
+                              ? getColors.drawerTextDark
+                              : getColors.thumbnailTextLight,
+                            textAlign: "left",
+                            mb: 5,
+                          }}
+                        >
+                          Selected Treatments
+                        </Typography>
+                        <Box
+                          display="grid"
+                          gridTemplateColumns="repeat(3, 1fr)"
+                          gap={4}
+                          mb={8}
+                        >
+                          {selectedTreatments.map((treatment, index) => (
+                            <SelectedTreatmentItem
+                              key={index}
+                              {...treatment}
+                              onRemove={handleDeselectTreatment}
+                              onChange={(value) => {
+                                const clone = [...selectedTreatments];
+                                const treatmentIdx = clone.findIndex(
+                                  (exer) => exer.id === value.id
+                                );
+                                clone[treatmentIdx] = {
+                                  ...value,
+                                };
+                                setSelectedTreatments(clone);
+                              }}
+                            />
+                          ))}
+                        </Box>
+
+                        <Typography
+                          sx={{
+                            fontSize: "28px",
+                            fontWeight: 500,
+                            color: darkMode
+                              ? getColors.drawerTextDark
+                              : getColors.thumbnailTextLight,
+                            textAlign: "left",
+                            mb: 5,
+                          }}
+                        >
+                          Available Treatments
+                        </Typography>
+                        <Box
+                          display="grid"
+                          gridTemplateColumns="repeat(3, 1fr)"
+                          gap={4}
+                          mb={8}
+                        >
+                          {renderingTreatments
+                            .filter((treatment) => treatment.select === false) // Filter out treatments where select is false
+                            .map((treatment, index) => (
+                              <AvailableTreatmentItem
+                                key={index}
+                                {...treatment}
+                                onAdd={handleAddToSelectedTreatment}
+                              />
+                            ))}
+                        </Box>
+                      </>
+                    )}
                   </Box>
                 )}
               </Box>
@@ -1294,19 +1196,26 @@ export const MainContent = () => {
                       textAlign: "left",
                     }}
                   >
-                    Current Phases
+                    {openPhaseSection ? "Selected Phases" : "Current Phases"}
                   </Typography>
+
                   <Button
                     variant="contained"
                     startIcon={
-                      <ChangeCircleOutlinedIcon
-                        style={{ fontSize: 28, marginRight: 8 }}
-                      />
+                      openPhaseSection ? (
+                        <SaveOutlinedIcon
+                          style={{ fontSize: 28, marginRight: 8 }}
+                        />
+                      ) : (
+                        <ChangeCircleOutlinedIcon
+                          style={{ fontSize: 28, marginRight: 8 }}
+                        />
+                      )
                     }
                     sx={{
                       fontFamily: "Poppins",
                       fontSize: "20px",
-                      px: "16px",
+                      width: "250px",
                       py: "12px",
                       background: darkMode ? "#2D2E30" : "#E6E6E6",
                       color: darkMode
@@ -1318,83 +1227,142 @@ export const MainContent = () => {
                     }}
                     onClick={handleChangePhases}
                   >
-                    Change Phases
+                    {openPhaseSection ? "Save Changes" : "Change Phases"}
                   </Button>
                 </Box>
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(3, 1fr)"
-                  gap={4}
-                  mb={8}
-                >
-                  {allPhases.map((phase, index) => (
-                    <CurrentPhaseItem
-                      key={index}
-                      {...phase}
-                      onEdit={handleEditClicked}
-                    />
-                  ))}
-                </Box>
-
-                <Typography
-                  sx={{
-                    fontSize: "28px",
-                    fontWeight: 500,
-                    color: darkMode
-                      ? getColors.drawerTextDark
-                      : getColors.thumbnailTextLight,
-                    textAlign: "left",
-                    mb: 5,
-                  }}
-                >
-                  Selected Treatments
-                </Typography>
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(3, 1fr)"
-                  gap={4}
-                  mb={8}
-                >
-                  {availableTreatmentData
-                    .filter((treatment) => treatment.select === true)
-                    .map((treatment, index) => (
-                      <SelectedTreatmentItem
+                {openPhaseSection ? (
+                  <Box
+                    display="grid"
+                    gridTemplateColumns="repeat(3, 1fr)"
+                    gap={4}
+                    mb={8}
+                  >
+                    {currentPhases.map((phase, index) => (
+                      <SelectedPhaseItem
                         key={index}
-                        {...treatment}
-                        onRemove={handleDeselect}
+                        {...phase}
+                        onRemove={handleDeselectPhase}
                       />
                     ))}
-                </Box>
-
-                <Typography
-                  sx={{
-                    fontSize: "28px",
-                    fontWeight: 500,
-                    color: darkMode
-                      ? getColors.drawerTextDark
-                      : getColors.thumbnailTextLight,
-                    textAlign: "left",
-                    mb: 5,
-                  }}
-                >
-                  Available Treatments
-                </Typography>
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(3, 1fr)"
-                  gap={4}
-                  mb={8}
-                >
-                  {availableTreatmentData
-                    .filter((treatment) => treatment.select === false)
-                    .map((treatment, index) => (
-                      <AvailableTreatmentItem
+                  </Box>
+                ) : (
+                  <Box
+                    display="grid"
+                    gridTemplateColumns="repeat(3, 1fr)"
+                    gap={4}
+                    mb={8}
+                  >
+                    {currentPhases.map((phase, index) => (
+                      <CurrentPhaseItem
                         key={index}
-                        {...treatment}
-                        onAdd={handleAddToSelected}
+                        {...phase}
+                        onEdit={handleEditCurrentClicked}
                       />
                     ))}
-                </Box>
+                  </Box>
+                )}
+                {openPhaseSection && (
+                  <>
+                    <Typography
+                      sx={{
+                        fontSize: "28px",
+                        fontWeight: 500,
+                        color: darkMode
+                          ? getColors.drawerTextDark
+                          : getColors.thumbnailTextLight,
+                        textAlign: "left",
+                        mb: "30px",
+                      }}
+                    >
+                      Available Phases
+                    </Typography>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns="repeat(3, 1fr)"
+                      gap={4}
+                      mb={8}
+                    >
+                      {allPhases.map((phase, index) => (
+                        <AvailablePhaseItem
+                          key={index}
+                          {...phase}
+                          onAdd={handleAddToSelectedPhase}
+                        />
+                      ))}
+                    </Box>
+                  </>
+                )}
+                {!openPhaseSection && (
+                  <>
+                    <Typography
+                      sx={{
+                        fontSize: "28px",
+                        fontWeight: 500,
+                        color: darkMode
+                          ? getColors.drawerTextDark
+                          : getColors.thumbnailTextLight,
+                        textAlign: "left",
+                        mb: 5,
+                      }}
+                    >
+                      Selected Treatments
+                    </Typography>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns="repeat(3, 1fr)"
+                      gap={4}
+                      mb={8}
+                    >
+                      {selectedTreatments.map((treatment, index) => (
+                        <SelectedTreatmentItem
+                          key={index}
+                          {...treatment}
+                          onRemove={handleDeselectTreatment}
+                          onChange={(value) => {
+                            const clone = [...selectedTreatments];
+                            const treatmentIdx = clone.findIndex(
+                              (exer) => exer.id === value.id
+                            );
+                            clone[treatmentIdx] = {
+                              ...value,
+                            };
+                            setSelectedTreatments(clone);
+                          }}
+                        />
+                      ))}
+                    </Box>
+
+                    <Typography
+                      sx={{
+                        fontSize: "28px",
+                        fontWeight: 500,
+                        color: darkMode
+                          ? getColors.drawerTextDark
+                          : getColors.thumbnailTextLight,
+                        textAlign: "left",
+                        mb: 5,
+                      }}
+                    >
+                      Available Treatments
+                    </Typography>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns="repeat(3, 1fr)"
+                      gap={4}
+                      mb={8}
+                    >
+                      {renderingTreatments
+                        .filter((treatment) => treatment.select === false) // Filter out treatments where select is false
+                        .map((treatment, index) => (
+                          <AvailableTreatmentItem
+                            key={index}
+                            {...treatment}
+                            onAdd={handleAddToSelectedTreatment}
+                          />
+                        ))}
+                    </Box>
+                  </>
+                )}
               </Box>
             ) : (
               <Box>
@@ -1500,19 +1468,26 @@ export const MainContent = () => {
                       textAlign: "left",
                     }}
                   >
-                    Current Phases
+                    {openPhaseSection ? "Selected Phases" : "Current Phases"}
                   </Typography>
+
                   <Button
                     variant="contained"
                     startIcon={
-                      <ChangeCircleOutlinedIcon
-                        style={{ fontSize: 28, marginRight: 8 }}
-                      />
+                      openPhaseSection ? (
+                        <SaveOutlinedIcon
+                          style={{ fontSize: 28, marginRight: 8 }}
+                        />
+                      ) : (
+                        <ChangeCircleOutlinedIcon
+                          style={{ fontSize: 28, marginRight: 8 }}
+                        />
+                      )
                     }
                     sx={{
                       fontFamily: "Poppins",
                       fontSize: "20px",
-                      px: "16px",
+                      width: "250px",
                       py: "12px",
                       background: darkMode ? "#2D2E30" : "#E6E6E6",
                       color: darkMode
@@ -1524,89 +1499,157 @@ export const MainContent = () => {
                     }}
                     onClick={handleChangePhases}
                   >
-                    Change Phases
+                    {openPhaseSection ? "Save Changes" : "Change Phases"}
                   </Button>
                 </Box>
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(3, 1fr)"
-                  gap={4}
-                  mb={8}
-                >
-                  {allPhases.map((phase, index) => (
-                    <CurrentPhaseItem
-                      key={index}
-                      {...phase}
-                      onEdit={handleEditClicked}
-                    />
-                  ))}
-                </Box>
-
-                <Typography
-                  sx={{
-                    fontSize: "28px",
-                    fontWeight: 500,
-                    color: darkMode
-                      ? getColors.drawerTextDark
-                      : getColors.thumbnailTextLight,
-                    textAlign: "left",
-                    mb: 5,
-                  }}
-                >
-                  Selected Treatments
-                </Typography>
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(3, 1fr)"
-                  gap={4}
-                  mb={8}
-                >
-                  {availableTreatmentData
-                    .filter((treatment) => treatment.select === true)
-                    .map((treatment, index) => (
-                      <SelectedTreatmentItem
+                {openPhaseSection ? (
+                  <Box
+                    display="grid"
+                    gridTemplateColumns="repeat(3, 1fr)"
+                    gap={4}
+                    mb={8}
+                  >
+                    {currentPhases.map((phase, index) => (
+                      <SelectedPhaseItem
                         key={index}
-                        {...treatment}
-                        onRemove={handleDeselect}
+                        {...phase}
+                        onRemove={handleDeselectPhase}
                       />
                     ))}
-                </Box>
-
-                <Typography
-                  sx={{
-                    fontSize: "28px",
-                    fontWeight: 500,
-                    color: darkMode
-                      ? getColors.drawerTextDark
-                      : getColors.thumbnailTextLight,
-                    textAlign: "left",
-                    mb: 5,
-                  }}
-                >
-                  Available Treatments
-                </Typography>
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(3, 1fr)"
-                  gap={4}
-                  mb={8}
-                >
-                  {availableTreatmentData
-                    .filter((treatment) => treatment.select === false)
-                    .map((treatment, index) => (
-                      <AvailableTreatmentItem
+                  </Box>
+                ) : (
+                  <Box
+                    display="grid"
+                    gridTemplateColumns="repeat(3, 1fr)"
+                    gap={4}
+                    mb={8}
+                  >
+                    {currentPhases.map((phase, index) => (
+                      <CurrentPhaseItem
                         key={index}
-                        {...treatment}
-                        onAdd={handleAddToSelected}
+                        {...phase}
+                        onEdit={handleEditCurrentClicked}
                       />
                     ))}
-                </Box>
+                  </Box>
+                )}
+                {openPhaseSection && (
+                  <>
+                    <Typography
+                      sx={{
+                        fontSize: "28px",
+                        fontWeight: 500,
+                        color: darkMode
+                          ? getColors.drawerTextDark
+                          : getColors.thumbnailTextLight,
+                        textAlign: "left",
+                        mb: "30px",
+                      }}
+                    >
+                      Available Phases
+                    </Typography>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns="repeat(3, 1fr)"
+                      gap={4}
+                      mb={8}
+                    >
+                      {allPhases.map((phase, index) => (
+                        <AvailablePhaseItem
+                          key={index}
+                          {...phase}
+                          onAdd={handleAddToSelectedPhase}
+                        />
+                      ))}
+                    </Box>
+                  </>
+                )}
+                {!openPhaseSection && (
+                  <>
+                    <Typography
+                      sx={{
+                        fontSize: "28px",
+                        fontWeight: 500,
+                        color: darkMode
+                          ? getColors.drawerTextDark
+                          : getColors.thumbnailTextLight,
+                        textAlign: "left",
+                        mb: 5,
+                      }}
+                    >
+                      Selected Treatments
+                    </Typography>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns="repeat(3, 1fr)"
+                      gap={4}
+                      mb={8}
+                    >
+                      {selectedTreatments.map((treatment, index) => (
+                        <SelectedTreatmentItem
+                          key={index}
+                          {...treatment}
+                          onRemove={handleDeselectTreatment}
+                          onChange={(value) => {
+                            const clone = [...selectedTreatments];
+                            const treatmentIdx = clone.findIndex(
+                              (exer) => exer.id === value.id
+                            );
+                            clone[treatmentIdx] = {
+                              ...value,
+                            };
+                            setSelectedTreatments(clone);
+                          }}
+                        />
+                      ))}
+                    </Box>
+
+                    <Typography
+                      sx={{
+                        fontSize: "28px",
+                        fontWeight: 500,
+                        color: darkMode
+                          ? getColors.drawerTextDark
+                          : getColors.thumbnailTextLight,
+                        textAlign: "left",
+                        mb: 5,
+                      }}
+                    >
+                      Available Treatments
+                    </Typography>
+                    <Box
+                      display="grid"
+                      gridTemplateColumns="repeat(3, 1fr)"
+                      gap={4}
+                      mb={8}
+                    >
+                      {renderingTreatments
+                        .filter((treatment) => treatment.select === false) // Filter out treatments where select is false
+                        .map((treatment, index) => (
+                          <AvailableTreatmentItem
+                            key={index}
+                            {...treatment}
+                            onAdd={handleAddToSelectedTreatment}
+                          />
+                        ))}
+                    </Box>
+                  </>
+                )}
               </Box>
             ))}
         </>
       </Box>
 
-      <SendDialog open={sendDialogOpen} setOpen={setSendDialogOpen} />
+      <SendDialog
+        open={sendDialogOpen}
+        setOpen={setSendDialogOpen}
+        careplanData={currentCareplanData}
+      />
+
+      <SendWithExerciseDialog
+        open={sendWithExerciseDialogOpen}
+        setOpen={setSendWithExerciseDialogOpen}
+      />
 
       <PhaseDialog
         open={phaseDialogOpen}
@@ -1614,6 +1657,7 @@ export const MainContent = () => {
         phaseData={phaseToEdit}
         onCopy={handleCopyNewPhase}
         onEdit={handleEditPhase}
+        onCurrentEdit={handleEditCurrentPhase}
         actionType={phaseActionType}
       />
     </Box>

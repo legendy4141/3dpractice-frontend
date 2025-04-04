@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useEffect, useContext } from "react";
 import {
   Dialog,
   DialogActions,
@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import { getColors } from "../../themes/theme";
 import { ThemeContext } from "../../context/ThemeContext";
+import { useForm, FormProvider } from "react-hook-form";
+import { RHFSelect } from "../RFHSelect/RFHSelect";
 
 export const PhaseDialog = ({
   open,
@@ -19,217 +21,191 @@ export const PhaseDialog = ({
   phaseData,
   onCopy,
   onEdit,
+  onCurrentEdit,
   actionType,
 }) => {
+  const methods = useForm({
+    name: phaseData?.name,
+    description: phaseData?.description,
+    repeattime: phaseData?.repeattime,
+    duration: phaseData?.duration,
+    active: phaseData?.active,
+  });
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = methods;
+
   const { darkMode } = useContext(ThemeContext);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [frequency, setFrequency] = useState("");
-  const [duration, setDuration] = useState("");
-  const [active, setActive] = useState("");
-
-  const frequencyData = {
-    1: "1 time per month",
-    2: "2 times per month",
-    3: "3 times per month",
-    4: "1 time per week",
-    5: "2 times per week",
-    6: "3 times per week",
-    7: "4 times per week",
-    8: "5 times per week",
-  };
-
-  const durationData = {
-    1: "1 week",
-    2: "2 weeks",
-    3: "3 weeks",
-    4: "4 weeks",
-    5: "5 weeks",
-    6: "6 weeks",
-    7: "7 weeks",
-    8: "8 weeks",
-    9: "1 month",
-    10: "2 months",
-    11: "3 months",
-    12: "4 months",
-    13: "5 months",
-    14: "6 months",
-  };
-
-  const activeData = {
-    1: "Passive Care",
-    2: "Active Care",
-    3: "Both Passive and Active Care",
-  };
 
   useEffect(() => {
     if (phaseData) {
-      setName(phaseData.name || "");
-      setDescription(phaseData.description || "");
-      setFrequency(phaseData.frequency || "");
-      setDuration(phaseData.duration || "");
-      setActive(phaseData.active || "");
+      setValue("name", phaseData?.name);
+      setValue("description", phaseData?.description);
+      setValue("repeattime", phaseData?.repeattime);
+      setValue("duration", phaseData?.duration);
+      setValue("active", phaseData?.active);
     }
-  }, [phaseData]);
+  }, [phaseData, setValue]);
 
-  const onSave = () => {
+  const onSave = (data) => {
     const phase = {
-      ...(actionType === "edit" && { id: phaseData.id }), // Add 'id' only for editing
-      name,
-      description,
-      frequency: frequency,
-      duration: duration,
-      active: active,
-      default: false,
+      ...((actionType === "edit" || actionType === "current-edit") && {
+        id: phaseData.id,
+      }), // Add 'id' only for editing
+      name: data.name,
+      description: data.description,
+      repeattime: data.repeattime,
+      duration: data.duration,
+      active: data.active,
     };
 
     if (actionType === "edit") onEdit(phase);
     else if (actionType === "add") onCopy(phase);
+    else if (actionType === "current-edit") onCurrentEdit(phase);
 
     onClose(); // Close the dialog
   };
 
   return (
     <Dialog open={open} onClose={onClose}>
-      <DialogTitle>
+      <DialogTitle sx={{ fontSize: "30px", pb: 0 }}>
         <>
           {actionType === "add" && "Create New Phase"}
           {actionType === "edit" && "Edit Phase"}
         </>
       </DialogTitle>
-      <DialogContent>
-        <FormControl fullWidth margin="normal">
-          <TextField
-            label="Phase Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter Phase Name"
-            // {...register("name", {
-            //   required: "Phase Name is required",
-            // })}
-            // error={!!errors.name}
-            // helperText={errors.name?.message}
-          />
-        </FormControl>
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSave)}>
+          <DialogContent sx={{ pt: 0 }}>
+            <FormControl fullWidth margin="normal">
+              <TextField
+                label="Phase Name"
+                placeholder="Enter Phase Name"
+                {...register("name", {
+                  required: "Phase Name is required",
+                })}
+                error={!!errors.name}
+                helperText={errors.name?.message}
+              />
+            </FormControl>
 
-        <FormControl fullWidth margin="normal">
-          <TextField
-            label="Phase Description"
-            value={description}
-            multiline
-            rows={4}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Enter Phase Description"
-            // {...register("description", {
-            //   required: "Phase Description is required",
-            // })}
-            // error={!!errors.description}
-            // helperText={errors.description?.message}
-          />
-        </FormControl>
+            <FormControl fullWidth margin="normal">
+              <TextField
+                label="Phase Description"
+                multiline
+                rows={4}
+                placeholder="Enter Phase Description"
+                {...register("description", {
+                  required: "Phase Description is required",
+                })}
+                error={!!errors.description}
+                helperText={errors.description?.message}
+              />
+            </FormControl>
 
-        {/* Frequency Dropdown */}
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Select the frequency of the treatment</InputLabel>
-          <TextField
-            select
-            value={frequency | ""}
-            onChange={(e) => setFrequency(e.target.value)}
-            // {...register("frequency", {
-            //   required: "Phase frequency is required",
-            // })}
-            // error={!!errors.frequency}
-            // helperText={errors.frequency?.message}
-          >
-            <MenuItem value="" disabled>
-              Select frequency
-            </MenuItem>
-            {Object.entries(frequencyData).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </FormControl>
+            {/* Frequency Dropdown */}
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Select the frequency of the treatment</InputLabel>
+              <RHFSelect
+                name="repeattime"
+                error={!!errors.repeattime}
+                helperText={errors.repeattime?.message}
+              >
+                <MenuItem value="1 time per month">1 time per month</MenuItem>
+                <MenuItem value="2 times per month">2 times per month</MenuItem>
+                <MenuItem value="3 times per month">3 times per month</MenuItem>
+                <MenuItem value="1 time per week">1 time per week</MenuItem>
+                <MenuItem value="2 times per week">2 times per week</MenuItem>
+                <MenuItem value="3 times per week">3 times per week</MenuItem>
+                <MenuItem value="4 times per week">4 times per week</MenuItem>
+                <MenuItem value="5 times per week">5 times per week</MenuItem>
+              </RHFSelect>
+            </FormControl>
 
-        {/* Duration Dropdown */}
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Select the duration of the treatment</InputLabel>
-          <TextField
-            select
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            // {...register("duration", {
-            //   required: "Phase duration is required",
-            // })}
-            // error={!!errors.duration}
-            // helperText={errors.duration?.message}
-          >
-            {Object.entries(durationData).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </FormControl>
+            {/* Duration Dropdown */}
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Select the duration of the treatment</InputLabel>
+              <RHFSelect
+                name="duration"
+                error={!!errors.duration}
+                helperText={errors.duration?.message}
+              >
+                <MenuItem value="1 week">1 week</MenuItem>
+                <MenuItem value="2 weeks">2 weeks</MenuItem>
+                <MenuItem value="3 weeks">3 weeks</MenuItem>
+                <MenuItem value="4 weeks">4 weeks</MenuItem>
+                <MenuItem value="5 weeks">5 weeks</MenuItem>
+                <MenuItem value="6 weeks">6 weeks</MenuItem>
+                <MenuItem value="7 weeks">7 weeks</MenuItem>
+                <MenuItem value="8 weeks">8 weeks</MenuItem>
+                <MenuItem value="1 month">1 month</MenuItem>
+                <MenuItem value="2 months">2 months</MenuItem>
+                <MenuItem value="3 months">3 months</MenuItem>
+                <MenuItem value="4 months">4 months</MenuItem>
+                <MenuItem value="5 months">5 months</MenuItem>
+                <MenuItem value="6 months">6 months</MenuItem>
+              </RHFSelect>
+            </FormControl>
 
-        {/* Active Dropdown */}
-        <FormControl fullWidth margin="normal">
-          <InputLabel>Select Active or Passive Care</InputLabel>
-          <TextField
-            select
-            value={active}
-            onChange={(e) => setActive(e.target.value)}
-            // {...register("active", {
-            //   required: "Phase care is required",
-            // })}
-            // error={!!errors.active}
-            // helperText={errors.active?.message}
-          >
-            {Object.entries(activeData).map(([value, label]) => (
-              <MenuItem key={value} value={value}>
-                {label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </FormControl>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          sx={{
-            borderRadius: "5px",
-            fontFamily: "Poppins",
-            fontSize: "18px",
-            fontWeight: 500,
-            color: darkMode ? getColors.appBarBgLight : getColors.appBarBgDark,
-            px: 4,
-            py: "11px",
-            textAlign: "center",
-            "&: hover": {
-              background: "none",
-              color: getColors.primaryMain,
-            },
-          }}
-          onClick={onClose}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="contained"
-          sx={{
-            borderRadius: "5px",
-            fontFamily: "Poppins",
-            fontSize: "18px",
-            fontWeight: 500,
-            px: 4,
-            py: "11px",
-            textAlign: "center",
-          }}
-          onClick={onSave}
-        >
-          {actionType === "add" ? "Add" : "Save"}
-        </Button>
-      </DialogActions>
+            {/* Active Dropdown */}
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Select Active or Passive Care</InputLabel>
+              <RHFSelect
+                name="active"
+                error={!!errors.active}
+                helperText={errors.active?.message}
+              >
+                <MenuItem value="Passive Care">Passive Care</MenuItem>
+                <MenuItem value="Active Care">Active Care</MenuItem>
+                <MenuItem value="Both Passive and Active Care">
+                  Both Passive and Active Care
+                </MenuItem>
+              </RHFSelect>
+            </FormControl>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              sx={{
+                borderRadius: "5px",
+                fontFamily: "Poppins",
+                fontSize: "18px",
+                fontWeight: 500,
+                color: darkMode
+                  ? getColors.appBarBgLight
+                  : getColors.appBarBgDark,
+                px: 4,
+                py: "11px",
+                textAlign: "center",
+                "&: hover": {
+                  background: "none",
+                  color: getColors.primaryMain,
+                },
+              }}
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{
+                borderRadius: "5px",
+                fontFamily: "Poppins",
+                fontSize: "18px",
+                fontWeight: 500,
+                px: 5,
+                py: "11px",
+                textAlign: "center",
+              }}
+            >
+              {actionType === "add" ? "Add" : "Save"}
+            </Button>
+          </DialogActions>
+        </form>
+      </FormProvider>
     </Dialog>
   );
 };

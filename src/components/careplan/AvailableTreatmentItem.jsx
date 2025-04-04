@@ -4,7 +4,7 @@ import { getColors } from "../../themes/theme";
 import { ThemeContext } from "../../context/ThemeContext";
 import { Add } from "@mui/icons-material";
 
-export const AvailableTreatmentItem = ({ id, title, onAdd }) => {
+export const AvailableTreatmentItem = ({ id, name, onAdd }) => {
   const { darkMode } = useContext(ThemeContext);
 
   const handleClick = () => {
@@ -36,6 +36,7 @@ export const AvailableTreatmentItem = ({ id, title, onAdd }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={handleClick}
     >
       <Typography
         sx={{
@@ -46,7 +47,7 @@ export const AvailableTreatmentItem = ({ id, title, onAdd }) => {
             : getColors.thumbnailTextLight,
         }}
       >
-        {title}
+        {name}
       </Typography>
       <Box
         display={"flex"}
@@ -62,7 +63,10 @@ export const AvailableTreatmentItem = ({ id, title, onAdd }) => {
             color: "green",
           },
         }}
-        onClick={handleClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick();
+        }}
       >
         <Add />
       </Box>

@@ -36,6 +36,7 @@ export const CurrentPhaseItem = ({ id, name, onEdit }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={handleClick}
     >
       <Typography
         sx={{
@@ -62,7 +63,10 @@ export const CurrentPhaseItem = ({ id, name, onEdit }) => {
             color: "blue",
           },
         }}
-        onClick={handleClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick();
+        }}
       >
         <BorderColorOutlinedIcon />
       </Box>

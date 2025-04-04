@@ -9,11 +9,17 @@ const VideosPage = () => {
   const [hovered, setHovered] = useState(null); // Track which video is being hovered
 
   const handlePatientClicked = () => {
-    window.open("/assets/videos/videos/patient.mp4", "_blank");
+    window.open(
+      "https://d2nut6gc5qzbiv.cloudfront.net/34481519/globalvideos/NewPatientVideo.mp4",
+      "_blank"
+    );
   };
 
   const handleDecompressClicked = () => {
-    window.open("/assets/videos/videos/decompress.mp4", "_blank");
+    window.open(
+      "https://d2nut6gc5qzbiv.cloudfront.net/34481519/globalvideos/Spinal-Decompression-Therapy.mp4",
+      "_blank"
+    );
   };
 
   return (
@@ -73,7 +79,7 @@ const VideosPage = () => {
           >
             {hovered === "patient" && (
               <video
-                src="/assets/videos/videos/patient.mp4"
+                src="https://d2nut6gc5qzbiv.cloudfront.net/34481519/globalvideos/NewPatientVideo.mp4"
                 autoPlay
                 muted
                 loop
@@ -122,7 +128,7 @@ const VideosPage = () => {
           >
             {hovered === "decompress" && (
               <video
-                src="/assets/videos/videos/decompress.mp4"
+                src="https://d2nut6gc5qzbiv.cloudfront.net/34481519/globalvideos/Spinal-Decompression-Therapy.mp4"
                 autoPlay
                 muted
                 loop

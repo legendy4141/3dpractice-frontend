@@ -52,7 +52,13 @@ export const VariantSelectionbar = () => {
   };
 
   return (
-    <Box>
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
       <Box
         sx={{
           display: "grid",

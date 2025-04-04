@@ -32,6 +32,7 @@ export const DefaultPhaseItem = ({ id, name, onRemove }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={handleClick} // Click event on the whole box
     >
       <Typography
         sx={{
@@ -60,7 +61,10 @@ export const DefaultPhaseItem = ({ id, name, onRemove }) => {
               color: "red",
             },
           }}
-          onClick={handleClick}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevents triggering parent Box click event
+            handleClick();
+          }}
         >
           <DeleteOutlinedIcon />
           <Typography

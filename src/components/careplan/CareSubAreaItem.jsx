@@ -3,14 +3,12 @@ import { Box, Typography } from "@mui/material";
 import { getColors } from "../../themes/theme";
 import { ThemeContext } from "../../context/ThemeContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { careplanData } from "../../utils/careplanData";
 
-export const CareSubAreaItem = ({ id, title }) => {
+export const CareSubAreaItem = ({ id, condition }) => {
   const navigate = useNavigate();
   const { mainId, careId } = useParams();
   const { darkMode } = useContext(ThemeContext);
 
-  const parentTitle = careplanData.find((data) => data.id === careId).title;
   const handleClick = (subId) => {
     navigate(`/care-plan/${mainId}/${careId}/${subId}`);
   };
@@ -39,6 +37,9 @@ export const CareSubAreaItem = ({ id, title }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={() => {
+        handleClick(condition);
+      }}
     >
       <Typography
         sx={{
@@ -49,7 +50,7 @@ export const CareSubAreaItem = ({ id, title }) => {
             : getColors.thumbnailTextLight,
         }}
       >
-        {`${title} (${parentTitle})`}
+        {`${condition} (${careId})`}
       </Typography>
       <Box
         display={"flex"}
@@ -66,8 +67,9 @@ export const CareSubAreaItem = ({ id, title }) => {
             color: "blue",
           },
         }}
-        onClick={() => {
-          handleClick(id);
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick(condition);
         }}
       >
         <Typography

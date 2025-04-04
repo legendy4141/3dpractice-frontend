@@ -8,8 +8,11 @@ import { ReactComponent as User } from "../../assets/topbar/user.svg";
 
 import { ModeChangebar } from "./ModeChangebar";
 import { ScrollableToolbar } from "./ScrollableToolbar";
+import { useAuthContext } from "../../hooks/contexts/useAuthContext";
 
 export const Topbar = () => {
+  const { user } = useAuthContext();
+  const isUser = user?.securityType === 3;
   const location = useLocation();
   const navigate = useNavigate();
   const currentSection = location.pathname.split("/")[1];
@@ -65,19 +68,21 @@ export const Topbar = () => {
             >
               Care Plan
             </Button>
-            <Button
-              onClick={handleUsersClick}
-              variant="contained"
-              startIcon={<User />}
-              sx={{
-                fontSize: "22px",
-                px: 5,
-                py: "14px",
-                borderRadius: "100px",
-              }}
-            >
-              Users
-            </Button>
+            {!isUser && (
+              <Button
+                onClick={handleUsersClick}
+                variant="contained"
+                startIcon={<User />}
+                sx={{
+                  fontSize: "22px",
+                  px: 5,
+                  py: "14px",
+                  borderRadius: "100px",
+                }}
+              >
+                Users
+              </Button>
+            )}
           </ScrollableToolbar>
         </Box>
         <ModeChangebar
@@ -87,7 +92,8 @@ export const Topbar = () => {
           isDisable={
             currentSection === "exercise" ||
             currentSection === "care-plan" ||
-            currentSection === "users"
+            currentSection === "users" ||
+            currentSection === "share"
               ? true
               : false
           }

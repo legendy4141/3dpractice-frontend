@@ -1,14 +1,32 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { getColors } from "../../themes/theme";
 import { ThemeContext } from "../../context/ThemeContext";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import { EditTreatmentDialog } from "./EditTreatmentDialog";
 
-export const SelectedTreatmentItem = ({ id, title, onRemove }) => {
+export const SelectedTreatmentItem = ({
+  id,
+  name,
+  description,
+  onRemove,
+  onChange,
+}) => {
   const { darkMode } = useContext(ThemeContext);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleClick = () => {
     onRemove(id);
+  };
+
+  const handleDialogOpen = () => {
+    setDialogOpen(true); // Open the dialog
+  };
+
+  const handleDialogClose = (e) => {
+    e?.stopPropagation();
+    setDialogOpen(false); // Close the dialog
   };
 
   return (
@@ -36,6 +54,7 @@ export const SelectedTreatmentItem = ({ id, title, onRemove }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={handleDialogOpen}
     >
       <Typography
         sx={{
@@ -46,7 +65,7 @@ export const SelectedTreatmentItem = ({ id, title, onRemove }) => {
             : getColors.thumbnailTextLight,
         }}
       >
-        {title}
+        {name}
       </Typography>
       <Box
         display={"flex"}
@@ -62,10 +81,23 @@ export const SelectedTreatmentItem = ({ id, title, onRemove }) => {
             color: "red",
           },
         }}
-        onClick={handleClick}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick();
+        }}
       >
         <DeleteOutlinedIcon />
       </Box>
+      <EditTreatmentDialog
+        open={dialogOpen}
+        onClose={handleDialogClose}
+        onSave={(value) => onChange(value)}
+        treatmentData={{
+          id,
+          name,
+          description,
+        }}
+      />
     </Box>
   );
 };

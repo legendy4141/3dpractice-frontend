@@ -144,6 +144,7 @@ export const CustomVideoPlayer = ({ src, onError, activeTool }) => {
   };
 
   const handleTouchStart = (e) => {
+    e.preventDefault();
     if (activeTool !== "draw" || !ctx) return;
 
     // Calculate the scale factor to adjust touch position based on canvas size vs video size
@@ -164,6 +165,7 @@ export const CustomVideoPlayer = ({ src, onError, activeTool }) => {
   };
 
   const handleTouchMove = (e) => {
+    e.preventDefault();
     if (!isDrawing || !ctx) return;
 
     // Calculate the scale factor to adjust touch position based on canvas size vs video size
@@ -180,7 +182,8 @@ export const CustomVideoPlayer = ({ src, onError, activeTool }) => {
     ctx.stroke();
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e) => {
+    e.preventDefault();
     setIsDrawing(false);
   };
 

@@ -4,7 +4,7 @@ import { getColors } from "../../themes/theme";
 import { ThemeContext } from "../../context/ThemeContext";
 import { useNavigate, useParams } from "react-router-dom";
 
-export const CareAreaItem = ({ id, title }) => {
+export const CareAreaItem = ({ id, area }) => {
   const navigate = useNavigate();
   const { mainId } = useParams();
   const { darkMode } = useContext(ThemeContext);
@@ -37,6 +37,9 @@ export const CareAreaItem = ({ id, title }) => {
             : getColors.thumbnailTextLight,
         },
       }}
+      onClick={() => {
+        handleClick(area);
+      }}
     >
       <Typography
         sx={{
@@ -47,7 +50,7 @@ export const CareAreaItem = ({ id, title }) => {
             : getColors.thumbnailTextLight,
         }}
       >
-        {title}
+        {area}
       </Typography>
       <Box
         display={"flex"}
@@ -64,8 +67,9 @@ export const CareAreaItem = ({ id, title }) => {
             color: "blue",
           },
         }}
-        onClick={() => {
-          handleClick(id);
+        onClick={(e) => {
+          e.stopPropagation();
+          handleClick(area);
         }}
       >
         <Typography

@@ -22,6 +22,13 @@ export const VideoPlayerSection = () => {
     setActiveTool(null);
   }, [videoUrl]);
 
+  useEffect(() => {
+    document.body.style.touchAction = "none";
+    return () => {
+      document.body.style = "";
+    };
+  }, []);
+
   const handleActionSelect = (tool) => {
     setActiveTool(tool);
   };
@@ -49,23 +56,49 @@ export const VideoPlayerSection = () => {
     // Show error if video is not found
     if (isVideoError) {
       return (
-        <Typography
-          sx={{ fontSize: "24px", color: theme.palette.text.secondary }}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+          }}
         >
-          No Video Found
-        </Typography>
+          <Typography
+            sx={{
+              fontSize: "24px",
+              color: theme.palette.text.secondary,
+              width: "100%",
+              textAlign: "center",
+            }}
+          >
+            No Video Found
+          </Typography>
+        </Box>
       );
     }
 
     // Render video player and toolbar
     return (
-      <Box display="flex" flexDirection="row" justifyContent="center">
+      <Box
+        display="flex"
+        flexDirection="row"
+        justifyContent="center"
+        alignItems="flex-start"
+        height="100%"
+      >
+        {isNervousSystem && <VariantSelectionbar />}
         <CustomVideoPlayer
           src={videoUrl}
           onError={() => setIsVideoError(true)}
           activeTool={activeTool}
         />
-        <Box display="flex" justifyContent="center">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="100%"
+        >
           <VideoToolbar onActionSelect={handleActionSelect} />
         </Box>
       </Box>
@@ -75,10 +108,10 @@ export const VideoPlayerSection = () => {
   return (
     <Box
       display="flex"
-      flexDirection="column"
       textAlign="center"
       justifyContent="center"
       flexGrow={1}
+      alignItems="flex-start"
     >
       <VideoPlayerContext.Provider value={{ isLoading, setIsLoading }}>
         {renderContent()}

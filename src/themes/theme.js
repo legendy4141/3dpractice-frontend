@@ -247,8 +247,19 @@ export const getTheme = (mode) =>
           },
         },
       },
+      MuiSelect: {
+        styleOverrides: {
+          root: {
+            "& .MuiOutlinedInput-notchedOutline": {
+              border: "none",
+            },
+            textTransform: "none",
+          },
+        },
+      },
     },
     typography: {
       fontFamily: "Inter",
+      textTransform: "none",
     },
   });

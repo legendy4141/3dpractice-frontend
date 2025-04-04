@@ -54,7 +54,25 @@ export const VideoTopbar = () => {
 
   const handleSubItemClick = (subItem) => {
     setActiveSubItem(subItem);
-    navigate(`/${section}/${videoId}/${subItem}`);
+    if (
+      section === "knee" &&
+      videoId === "knee" &&
+      subItem === "Interactive Knee Degeneration"
+    )
+      window.open("/webgl/interactive-knee-degeneration", "_blank");
+    else if (
+      section === "shoulder" &&
+      videoId === "shoulder" &&
+      subItem === "Interactive Rotator Cuff Injury"
+    )
+      window.open("/webgl/interactive-rotator-cuff-injury", "_blank");
+    else if (
+      section === "spine" &&
+      videoId === "whiplash" &&
+      subItem === "Interactive Whiplash"
+    )
+      window.open("/webgl/interactive-whiplash", "_blank");
+    else navigate(`/${section}/${videoId}/${subItem}`);
   };
 
   return (
